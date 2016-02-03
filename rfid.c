@@ -5,27 +5,28 @@
 
 #include "mercury/tm_reader.h"
 
-TMR_Reader reader, *readerp;
-TMR_ReadPlan plan;
-TMR_ReadListenerBlock rlb;
-TMR_ReadExceptionListenerBlock reb;
-TMR_Region region;
-TMR_Status status;
-TMR_String model;
+int readerCount = 0;
+TMR_Reader ** readers = NULL;
+TMR_ReadPlan** plan = NULL;
+TMR_ReadListenerBlock** rlb = NULL;
+TMR_ReadExceptionListenerBlock** reb = NULL;
+TMR_Region** region = NULL;
+TMR_Status** status = NULL;
+TMR_String** model = NULL;
 
 int16_t antennaMaxPower;
 int16_t antennaMinPower;
 
-typedef void (*py_callback)(char** tagID);
-py_callback hPython;
+typedef void (*PythonCallback)(char** message);
+PythonCallback pythonCallback;
 
 void callback(TMR_Reader *reader, const TMR_TagReadData *t, void *cookie);
-int run(py_callback python);
+int run(const char* deviceURI, PythonCallback python);
 int closeRFID();
 int checkError(TMR_Status status, const char* msg);
 int getEnum(const char* string);
 
-void callback(TMR_Reader *reader, const TMR_TagReadData *t, void *cookie)
+void callback(TMR_Reader *readerr, const TMR_TagReadData *t, void *cookie)
 {
 	char** data = malloc(sizeof(char*) * 6);
 
@@ -54,43 +55,66 @@ void callback(TMR_Reader *reader, const TMR_TagReadData *t, void *cookie)
 	sprintf(tagTimeStampLow, "%ui", t->timestampLow);	
 	data[5] = tagTimeStampLow;
 
-	hPython(data);
+	pythonCallback(data);
 
 	free(data);
 }
 
 void exceptionCallback(TMR_Reader *reader, TMR_Status error, void *cookie)
 {
-	fprintf(stderr, "Error:%s\n", TMR_strerr(reader, error));
+	fprintf(stderr, "Error :%s\n", TMR_strerr(reader, error));
 }
 
-int run(py_callback python)
+int startReader(const char* deviceURI, PythonCallback python)
 {
 	if(python == NULL)
 	{
 		printf("Error: No callback function provided\n");
 		return -1;
 	}
-	if(*python == NULL)
+
+	pythonCallback = python;
+
+	//allocate memory
+	readers = realloc(readers, (readerCount + 1) * sizeof(TMR_Reader*));
+	TMR_Reader* pr = malloc(sizeof(TMR_Reader));
+	readers[readerCount] = pr;
+
+	plan = realloc(plan, (readerCount + 1) * sizeof(TMR_ReadPlan*));
+	TMR_ReadPlan* prp = malloc(sizeof(TMR_ReadPlan));
+	plan[readerCount] = prp;
+
+	rlb = realloc(rlb, (readerCount + 1) * sizeof(TMR_ReadListenerBlock*));
+	TMR_ReadListenerBlock* prlb = malloc(sizeof(TMR_ReadListenerBlock));
+	rlb[readerCount] = prlb;
+	
+	reb = realloc(reb, (readerCount + 1) * sizeof(TMR_ReadExceptionListenerBlock*));
+	TMR_ReadExceptionListenerBlock* preb = malloc(sizeof(TMR_ReadExceptionListenerBlock));
+	reb[readerCount] = preb;
+
+	region = realloc(region, (readerCount + 1) * sizeof(TMR_Region*));
+	TMR_Region* preg = malloc(sizeof(TMR_Region));
+	region[readerCount] = preg;
+
+	status = realloc(status, (readerCount + 1) * sizeof(TMR_Status*));
+	TMR_Status* pstat = malloc(sizeof(TMR_Status));
+	status[readerCount] = pstat;
+
+	model = realloc(model, (readerCount + 1) * sizeof(TMR_String*));
+	TMR_String* pstr = malloc(sizeof(TMR_String));
+	model[readerCount] = pstr;
+
+	if(checkError(TMR_create(readers[readerCount], deviceURI), "Creating reader"))
 	{
-		printf("Error: No callback function provided\n");
 		return -1;
 	}
-
-	hPython = python;
-
-	readerp = &reader;
-	if(checkError(TMR_create(readerp, "tmr:///dev/rfid"), "Creating reader"))
-	{
-		return -1;
-	}
-	if(checkError(TMR_connect(readerp), "Connecting to reader"))
+	if(checkError(TMR_connect(readers[readerCount]), "Connecting to reader"))
 	{
 		return -1;
 	}
 	
-	region = TMR_REGION_NONE;
-	if(checkError(TMR_paramGet(readerp, TMR_PARAM_REGION_ID, &region), "Getting Saved Region"))
+	*(region[readerCount]) = TMR_REGION_NONE;
+	if(checkError(TMR_paramGet(readers[readerCount], TMR_PARAM_REGION_ID, region[readerCount]), "Getting Saved Region"))
 	{
 		return -1;
 	}
@@ -105,7 +129,7 @@ int run(py_callback python)
 		regions.max = sizeof(_regionStore)/sizeof(_regionStore[0]);
 		regions.len = 0;
 
-		if(checkError(TMR_paramGet(readerp, TMR_PARAM_REGION_SUPPORTEDREGIONS, &regions), "Getting List of Regions"))
+		if(checkError(TMR_paramGet(readers[readerCount], TMR_PARAM_REGION_SUPPORTEDREGIONS, &regions), "Getting List of Regions"))
 		{
 			return -1;
 		}
@@ -116,57 +140,55 @@ int run(py_callback python)
 			return -1;
 		}
 
-		region = regions.list[2];
-		if(checkError(TMR_paramSet(readerp, TMR_PARAM_REGION_ID, &region), "Setting region"))
+		*(region[readerCount]) = regions.list[2];
+		if(checkError(TMR_paramSet(readers[readerCount], TMR_PARAM_REGION_ID, &region), "Setting region"))
 		{
 			return -1;
 		}
 	}
 
-	if(checkError(TMR_RP_init_simple(&plan, 0x0, NULL, TMR_TAG_PROTOCOL_GEN2, 1000), "Initialising read plan"))
+	if(checkError(TMR_RP_init_simple(plan[readerCount], 0x0, NULL, TMR_TAG_PROTOCOL_GEN2, 1000), "Initialising read plan"))
 	{
 		return -1;
 	}
 
-	if(checkError(TMR_paramSet(readerp, TMR_PARAM_READ_PLAN, &plan), "Setting Read Plan"))
+	if(checkError(TMR_paramSet(readers[readerCount], TMR_PARAM_READ_PLAN, plan[readerCount]), "Setting Read Plan"))
 	{
 		return -1;
 	}
 
-	rlb.listener = callback;
-	rlb.cookie = NULL;
+	rlb[readerCount]->listener = callback;
+	rlb[readerCount]->cookie = NULL;
 
-	reb.listener = exceptionCallback;
-	reb.cookie = NULL;
+	reb[readerCount]->listener = exceptionCallback;
+	reb[readerCount]->cookie = NULL;
 
-	if(checkError(TMR_addReadListener(readerp, &rlb), "Adding read listener"))
+	if(checkError(TMR_addReadListener(readers[readerCount], rlb[readerCount]), "Adding read listener"))
 	{
 		return -1;
 	}
 
-	if(checkError(TMR_addReadExceptionListener(readerp, &reb), "Adding Exception Listener"))
+	if(checkError(TMR_addReadExceptionListener(readers[readerCount], reb[readerCount]), "Adding Exception Listener"))
 	{
 		return -1;
 	}
 
-	if(checkError(TMR_startReading(readerp), "Starting reader"))
+	if(checkError(TMR_startReading(readers[readerCount]), "Starting reader"))
 	{
 		return -1;
 	}
-
-	sleep(5);
 
 	return 0;
 }
 
 int closeRFID()
 {
-	if(checkError(TMR_stopReading(readerp), "Stopping Reader"))
+	/*if(checkError(TMR_stopReading(readerp), "Stopping Reader"))
 	{
 		return -1;
 	}
 
-	TMR_destroy(readerp);
+	TMR_destroy(readerp);*/
 
 	return 0;
 }
@@ -184,7 +206,7 @@ int checkError(TMR_Status status, const char* msg)
 
 int setParameter(const char* parameterS, const char* value)
 {
-	int parameter = getEnum(parameterS);
+	/*int parameter = getEnum(parameterS);
 
 	if(checkError(TMR_paramSet(readerp, parameter, value), "Setting External Parameter"))
 	{
@@ -193,7 +215,8 @@ int setParameter(const char* parameterS, const char* value)
 	else
 	{
 		return 0;
-	}
+	}*/
+	return 0;
 }
 /*
 void* getParameter(const char* parameterS
