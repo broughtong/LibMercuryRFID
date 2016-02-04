@@ -6,6 +6,7 @@
 #include "mercury/tm_reader.h"
 
 int readerCount = 0;
+int uniqueReaderInstance = 0;
 TMR_Reader ** readers = NULL;
 TMR_ReadPlan** plan = NULL;
 TMR_ReadListenerBlock** rlb = NULL;
@@ -26,7 +27,7 @@ int closeRFID();
 int checkError(TMR_Status status, const char* msg);
 int getEnum(const char* string);
 
-void callback(TMR_Reader *readerr, const TMR_TagReadData *t, void *cookie)
+void tagCallback(TMR_Reader *readerr, const TMR_TagReadData *t, void *cookie)
 {
 	char** data = malloc(sizeof(char*) * 6);
 
@@ -55,6 +56,8 @@ void callback(TMR_Reader *readerr, const TMR_TagReadData *t, void *cookie)
 	sprintf(tagTimeStampLow, "%ui", t->timestampLow);	
 	data[5] = tagTimeStampLow;
 
+	printf("%d\n", t->phase);
+
 	pythonCallback(data);
 
 	free(data);
@@ -62,20 +65,19 @@ void callback(TMR_Reader *readerr, const TMR_TagReadData *t, void *cookie)
 
 void exceptionCallback(TMR_Reader *reader, TMR_Status error, void *cookie)
 {
-	fprintf(stderr, "Error :%s\n", TMR_strerr(reader, error));
+	fprintf(stderr, "Error:%s\n", TMR_strerr(reader, error));
 }
 
-int startReader(const char* deviceURI, PythonCallback python)
+int startReader(const char* deviceURI, PythonCallback callbackHandle)
 {
-	if(python == NULL)
+	if(callbackHandle == NULL)
 	{
 		printf("Error: No callback function provided\n");
 		return -1;
 	}
 
-	pythonCallback = python;
+	pythonCallback = callbackHandle;
 
-	//allocate memory
 	readers = realloc(readers, (readerCount + 1) * sizeof(TMR_Reader*));
 	TMR_Reader* pr = malloc(sizeof(TMR_Reader));
 	readers[readerCount] = pr;
@@ -157,7 +159,7 @@ int startReader(const char* deviceURI, PythonCallback python)
 		return -1;
 	}
 
-	rlb[readerCount]->listener = callback;
+	rlb[readerCount]->listener = tagCallback;
 	rlb[readerCount]->cookie = NULL;
 
 	reb[readerCount]->listener = exceptionCallback;
@@ -178,6 +180,13 @@ int startReader(const char* deviceURI, PythonCallback python)
 		return -1;
 	}
 
+	uniqueReaderInstance++;
+
+	return (uniqueReaderInstance - 1);
+}
+
+int stopReader()
+{
 	return 0;
 }
 
