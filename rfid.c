@@ -56,8 +56,6 @@ void tagCallback(TMR_Reader *readerr, const TMR_TagReadData *t, void *cookie)
 	sprintf(tagTimeStampLow, "%ui", t->timestampLow);	
 	data[5] = tagTimeStampLow;
 
-	printf("%d\n", t->phase);
-
 	pythonCallback(data);
 
 	free(data);
