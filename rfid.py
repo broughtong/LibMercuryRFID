@@ -25,10 +25,8 @@ class Communicator(threading.Thread):
 				if msg == "exit":
 					break
 				else:
-					
-					#msg = "Reader: " + taginfo[0] + " TAG: " + taginfo[1] + " RSSI: " + taginfo[2] + "dB Phase: " + taginfo[3] + u"\u00B0 Frequency: " + taginfo[4] + " Timestamp (high): " + taginfo[5] + " Timestamp (low): " + taginfo[6]
-					pass
-					#digest message, send to designated callback func
+					msg = {"reader":msg[0], "tag":msg[1], "rssi":msg[2], "phase":msg[3], "frequency":msg[4], "timestamp-low":msg[5], "timestamp-high":msg[6]}
+					callbackList[int(msg["reader"])](msg)
 			except:
 				print("Unexpected error: ", sys.exc_info()[0])
 
@@ -75,7 +73,6 @@ def startReader(deviceURI, callbackFunction):
 	readerID = lib.startReader(deviceURI, callbackHandler.callback)
 
 	callbackList[readerID] = callbackFunction
-	print readerID
 	return readerID
 
 def stopReader(readerID):
