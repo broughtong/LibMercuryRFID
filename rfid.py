@@ -60,7 +60,7 @@ def init():
 	comThread = Communicator(communicatorQueue)
 	comThread.start()
 
-	lib = ctypes.CDLL("libmerc/rfid.so")
+	lib = ctypes.CDLL("rfid.so")
 
 	callbackHandler = CallbackHandler(communicatorQueue)
 
