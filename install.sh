@@ -1,4 +1,5 @@
 #!/bin/bash
+
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root" 1>&2
    exit 1
@@ -14,8 +15,8 @@ plugged="$(ls /dev | grep "ttyUSB")"
 
 fileList="$(diff <(echo "$unplugged") <(echo "$plugged"))"
 file="$(echo $fileList | cut -d " " -f 5)"
-echo Current location: $file
-echo Persistant symlink: /dev/rfid
+echo RFID detected at: $file
+echo "Persistant symlink created at /dev/rfid for this device"
 
 prod="$(udevadm info -a -n /dev/$file | grep '{idProduct}' | head -n1 | tr -d '[[:space:]]')"
 vend="$(udevadm info -a -n /dev/$file | grep '{idVendor}' | head -n1 | tr -d '[[:space:]]')"
