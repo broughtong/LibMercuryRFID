@@ -5,6 +5,10 @@
 
 #include "tm_reader.h"
 
+#ifndef USE_TRANSPORT_LISTENER
+#define USE_TRANSPORT_LISTENER 0
+#endif
+
 int readerCount = 0;
 int uniqueReaderInstance = 0;
 TMR_Reader ** readers = NULL;
@@ -119,7 +123,7 @@ int startReader(const char* deviceURI, PythonCallback callbackHandle)
 		return -1;
 	}
 
-	if(region == TMR_REGION_NONE)
+	if(*(region[readerCount]) == TMR_REGION_NONE)
 	{
 		printf("No saved regions\n");
 
@@ -140,8 +144,8 @@ int startReader(const char* deviceURI, PythonCallback callbackHandle)
 			return -1;
 		}
 
-		*(region[readerCount]) = regions.list[2];
-		if(checkError(TMR_paramSet(readers[readerCount], TMR_PARAM_REGION_ID, &region), "Setting region"))
+		*(region[readerCount]) = regions.list[0];
+		if(checkError(TMR_paramSet(readers[readerCount], TMR_PARAM_REGION_ID, &*(region[readerCount])), "Setting region"))
 		{
 			return -1;
 		}

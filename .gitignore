@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *~
 mercury/
+lib/libmercuryrfid.so.1
 
 # Distribution / packaging
 .Python

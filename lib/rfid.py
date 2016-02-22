@@ -25,10 +25,12 @@ class Communicator(threading.Thread):
 				if msg == "exit":
 					break
 				else:
-					msg = {"reader":msg[0], "tag":msg[1], "rssi":msg[2], "phase":msg[3], "frequency":msg[4], "timestamp-low":msg[5], "timestamp-high":msg[6]}
-					callbackList[int(msg["reader"])](msg)
+					print msg
+					#msg = {"reader":msg[0], "tag":msg[1], "rssi":msg[2], "phase":msg[3], "frequency":msg[4], "timestamp-low":msg[5], "timestamp-high":msg[6]}
+					#msg = {"tag":msg[0], "rssi":msg[1], "phase":msg[2], "frequency":msg[3], "timestamp-low":msg[4], "timestamp-high":msg[5]}
+					#callbackList[int(msg["reader"])](msg)
 			except:
-				print("Unexpected error: ", sys.exc_info()[0])
+				print "Unexpected error in thread communicator: " + str(sys.exc_info()[0])
 
 class CallbackHandler(object):
 
@@ -40,16 +42,19 @@ class CallbackHandler(object):
 	def callbackHandler(self, char_ptr_ptr):
 		taginfo = []
 
-		for i in xrange(0, 7):
+		for i in xrange(0, 6):
 			taginfo.append("")
-			for j in char_ptr_ptr[i]:
-				if j == "\0":
-					break
-				else:
-					taginfo[i] += j
+			try:
+				for j in char_ptr_ptr[i]:
+					if j == "\0":
+						break
+					else:
+						taginfo[i] += j
+			except:
+				print "index error?" + str(i) + "\n"
 
 		self.messageQueue.put(taginfo)
-
+		
 		return 0
 
 def init():

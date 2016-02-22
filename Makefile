@@ -2,7 +2,7 @@ OBJS = lib/libmercuryrfid.o lib/enums.o
 CC = gcc
 IFLAGS = -Imercury/api/lib/LTK/LTKC/Library -Imercury/api/lib/LTK/LTKC/Library/LLRP.org -Imercury/api
 CFLAGS = -fPIC -Wall -Werror -c
-LFLAGS = -shared -Wall -Wl,-rpath '-Wl,$ORIGIN'
+LFLAGS = -shared -Wall
 LOBJS = mercury/api/libmercuryapi.so.1 -lpthread  mercury/api/lib/LTK/LTKC/Library/libltkc.so.1 mercury/api/lib/LTK/LTKC/Library/LLRP.org/libltkctm.so.1
 
 lib/libmercuryrfid.so.1 : $(OBJS)
