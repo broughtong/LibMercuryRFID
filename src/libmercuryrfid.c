@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <time.h>
 
-#include "mercury/tm_reader.h"
+#include "tm_reader.h"
 
 int readerCount = 0;
 int uniqueReaderInstance = 0;

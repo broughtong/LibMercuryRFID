@@ -5,6 +5,10 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+echo "Building Library..."
+make > /dev/null
+make clean > /dev/null
+
 echo "Adding User to correct groups"
 sudo usermod -a -G dialout $USER
 
@@ -30,7 +34,6 @@ echo "Settings updated, unplug and replug rfid device for /dev/rfid to appear"
 
 echo "Installing RFID libraries"
 
-cp lib/rfid.so /usr/lib/rfid.so
 cp lib/libltkc.so.1 /usr/lib/libltkc.so.1
 cp lib/libltkctm.so.1 /usr/lib/libltkctm.so.1
 cp lib/libmercuryapi.so.1 /usr/lib/libmercuryapi.so.1
