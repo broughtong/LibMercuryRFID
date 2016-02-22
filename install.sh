@@ -37,6 +37,7 @@ echo "Installing RFID libraries"
 cp lib/libltkc.so.1 /usr/lib/libltkc.so.1
 cp lib/libltkctm.so.1 /usr/lib/libltkctm.so.1
 cp lib/libmercuryapi.so.1 /usr/lib/libmercuryapi.so.1
+cp lib/libmercuryrfid.so.1 /usr/lib/libmercuryrfid.so.1
 
 echo "Installing Python Module"
 

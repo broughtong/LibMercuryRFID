@@ -60,7 +60,7 @@ def init():
 	comThread = Communicator(communicatorQueue)
 	comThread.start()
 
-	lib = ctypes.CDLL("rfid.so")
+	lib = ctypes.CDLL("libmercuryrfid.so.1")
 
 	callbackHandler = CallbackHandler(communicatorQueue)
 
