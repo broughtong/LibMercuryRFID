@@ -7,11 +7,11 @@ fi
 
 echo "Building Library..."
 make > /dev/null
-make clean > /dev/null
+make clean &> /dev/null
 
 echo "Installing RFID libraries"
 
-ln -s libmercuryrfid.so.1.0 libmercuryrfid.so.1
+ln -s libmercuryrfid.so.1.0 lib/libmercuryrfid.so.1 &> /dev/null
 
 cp lib/libltkc.so.1 /usr/lib/
 cp lib/libltkctm.so.1 /usr/lib/

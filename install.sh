@@ -7,7 +7,7 @@ fi
 
 echo "Building Library..."
 make > /dev/null
-make clean > /dev/null
+make clean &> /dev/null
 
 echo "Adding User to correct groups"
 sudo usermod -a -G dialout $USER
@@ -34,7 +34,7 @@ echo "Settings updated, unplug and replug rfid device for /dev/rfid to appear"
 
 echo "Installing RFID libraries"
 
-ln -s libmercuryrfid.so.1.0 libmercuryrfid.so.1
+ln -s libmercuryrfid.so.1.0 lib/libmercuryrfid.so.1 &> /dev/null
 
 cp lib/libltkc.so.1 /usr/lib/
 cp lib/libltkctm.so.1 /usr/lib/
