@@ -225,6 +225,7 @@ int setParameter(const char* parameterS, const char* value)
 	}*/
 	return 0;
 }
+
 /*
 void* getParameter(const char* parameterS
 {

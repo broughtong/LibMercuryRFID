@@ -16,6 +16,7 @@ rm /usr/lib/libltkc.so.1
 rm /usr/lib/libltkctm.so.1
 rm /usr/lib/libmercuryapi.so.1
 rm /usr/lib/libmercuryrfid.so.1
+rm /usr/lib/libmercuryrfid.so.1.0
 
 echo "Removing Python Modules"
 

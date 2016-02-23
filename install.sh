@@ -34,13 +34,18 @@ echo "Settings updated, unplug and replug rfid device for /dev/rfid to appear"
 
 echo "Installing RFID libraries"
 
-cp lib/libltkc.so.1 /usr/lib/libltkc.so.1
-cp lib/libltkctm.so.1 /usr/lib/libltkctm.so.1
-cp lib/libmercuryapi.so.1 /usr/lib/libmercuryapi.so.1
-cp lib/libmercuryrfid.so.1 /usr/lib/libmercuryrfid.so.1
+ln -s libmercuryrfid.so.1.0 libmercuryrfid.so.1
+
+cp lib/libltkc.so.1 /usr/lib/
+cp lib/libltkctm.so.1 /usr/lib/
+cp lib/libmercuryapi.so.1 /usr/lib/
+cp lib/libmercuryrfid.so.1.0 /usr/lib/
+cp lib/libmercuryrfid.so.1 /usr/lib
 
 echo "Installing Python Module"
 
+cp src/rfid.py lib/rfid.py
+chmod +x lib/rfid.py
 cp lib/rfid.py /usr/lib/python2.7/rfid.py
 
 echo "Finished Installing"

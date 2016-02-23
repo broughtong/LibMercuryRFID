@@ -1,1 +1,7 @@
 g++ -c rfid.cpp -o rfid.o
+
+g++ -shared -fPIC rfid.o -o rfid.so.1
+
+g++ rfid-test.cpp -o rfid-test -Lrfid.so.1
+
+chmod +x rfid-test
