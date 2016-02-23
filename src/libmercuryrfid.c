@@ -5,10 +5,6 @@
 
 #include "tm_reader.h"
 
-#ifndef USE_TRANSPORT_LISTENER
-#define USE_TRANSPORT_LISTENER 0
-#endif
-
 int readerCount = 0;
 int uniqueReaderInstance = 0;
 TMR_Reader ** readers = NULL;
