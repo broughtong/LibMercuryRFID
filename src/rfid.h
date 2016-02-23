@@ -1,20 +1,8 @@
-#include <iostream>
-#include "rfid.h"
+namespace rfid{
+	typedef int ReaderID;
 
-void myCallback(const char* message)
-{
-	printf("message received");
-}
-
-int main(int argc, char *argv[])
-{
-	rfid::init();
-	int reader = rfid::startReader("tmr:///dev/rfid", myCallback);
-
-	std::cin.get();
-
-	rfid::stopReader(reader);
-	rfid::close();
-	
-	return 0;
+	void init();
+	ReaderID startReader();
+	void stopReader();
+	void close();
 }

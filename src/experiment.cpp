@@ -9,7 +9,7 @@ extern "C"
 
 void myCallback(const char** message)
 {
-	std::cout << "message received" << std::endl;
+	std::cout << "Tag ID: " << message[0] << " RSSI: " << message[1] << std::endl;
 }
 
 int main(int argc, char *argv[])
