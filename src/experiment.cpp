@@ -1,11 +1,5 @@
 #include <iostream>
-
-extern "C"
-{
-	int startReader(const char* deviceURI, void (*callback)(const char** message));
-	int stopReader(int readerID);
-	int closeRFID();
-}
+#include "rfid.h"
 
 void myCallback(const char** message)
 {
@@ -14,12 +8,12 @@ void myCallback(const char** message)
 
 int main(int argc, char *argv[])
 {
-	int readerID = startReader("tmr:///dev/ttyUSB0", &myCallback);
+	rfid::ReaderID readerID = rfid::startReader("tmr:///dev/ttyUSB0", &myCallback);
 
 	std::cin.get();
 
-	stopReader(readerID);
-	closeRFID();
+	rfid::stopReader(readerID);
+	rfid::closeRFID();
 
 	return 0;
 }

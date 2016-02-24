@@ -15,7 +15,7 @@ lib/enums.o: src/enums.c
 	$(CC) $(CFLAGS) $(IFLAGS) src/enums.c -o lib/enums.o
 
 clean:
-	rm -f *~
-	rm -f lib/*.o lib/*~
-	rm -f src/*~
+	@rm -f *~
+	@rm -f lib/*.o lib/*~
+	@rm -f src/*~
 

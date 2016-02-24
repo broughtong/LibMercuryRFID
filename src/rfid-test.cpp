@@ -1,9 +1,10 @@
 #include <iostream>
 #include "rfid.h"
 
-void myCallback(const char* message)
+void myCallback(const char** message)
 {
-	printf("message received");
+	//only uses message 0 and 1, more information is available, explained in docs
+	std::cout << "Tag ID: " << message[0] << " RSSI: " << message[1] << std::endl;
 }
 
 int main(int argc, char *argv[])
@@ -15,6 +16,5 @@ int main(int argc, char *argv[])
 
 	rfid::stopReader(reader);
 	rfid::close();
-	
 	return 0;
 }
