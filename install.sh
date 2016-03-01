@@ -5,6 +5,8 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+sudo apt-get install -y python make
+
 echo "Building Library..."
 make > /dev/null
 make clean &> /dev/null
