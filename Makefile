@@ -8,11 +8,11 @@ LIBS = src/lib/mercury/api/libmercuryapi.so.1 -lpthread  src/lib/mercury/api/lib
 lib/libmercuryrfid.so.1.0 : $(OBJS)
 	$(CC) $(LFLAGS) $(OBJS) -o lib/libmercuryrfid.so.1.0  $(IFLAGS) $(LIBS)
 
-lib/libmercuryrfid.o: src/libmercuryrfid.c
-	$(CC) $(CFLAGS) $(IFLAGS) src/libmercuryrfid.c -o lib/libmercuryrfid.o
+lib/libmercuryrfid.o: src/lib/libmercuryrfid.c
+	$(CC) $(CFLAGS) $(IFLAGS) src/lib/libmercuryrfid.c -o lib/libmercuryrfid.o
 
-lib/enums.o: src/enums.c
-	$(CC) $(CFLAGS) $(IFLAGS) src/enums.c -o lib/enums.o
+lib/enums.o: src/lib/enums.c
+	$(CC) $(CFLAGS) $(IFLAGS) src/lib/enums.c -o lib/enums.o
 
 clean:
 	@rm -f *~
