@@ -9,7 +9,7 @@ lib/*.o
 # Distribution / packaging
 .Python
 env/
-build/
+#build/
 develop-eggs/
 dist/
 downloads/
