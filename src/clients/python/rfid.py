@@ -71,11 +71,28 @@ def init():
 
 	callbackList = {}
 
+def getHopTime(readerID):
+
+	global lib
+
+	time = lib.getHopTime(readerID)
+
+	return time
+
+def setHopTime(readerID, newHopTime):
+
+	global lib
+
+	lib.setHopTime(readerID, newHopTime)
+
 def startReader(deviceURI, callbackFunction):
 
 	global lib, callbackList, callbackHandler
 
 	readerID = lib.startReader(deviceURI, callbackHandler.callback)
+
+	#lib.getHopTime(readerID)
+	#lib.setHopTime(readerID, 100)
 
 	callbackList[readerID] = callbackFunction
 	return readerID

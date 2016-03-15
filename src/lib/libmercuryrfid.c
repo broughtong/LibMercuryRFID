@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
+#include <inttypes.h>
 
 #include "tm_reader.h"
 
@@ -211,8 +212,70 @@ int checkError(TMR_Status status, const char* msg)
 	return 1;
 }
 
+void getPower(int readerID)
+{
+	int16_t max, min;
+	int32_t current;
+
+	checkError(TMR_stopReading(readers[readerID]), "Stopping Reader for power reading");
+
+	TMR_paramGet(readers[readerID], TMR_PARAM_RADIO_POWERMAX , &max);
+	TMR_paramGet(readers[readerID], TMR_PARAM_RADIO_POWERMIN , &min);
+	TMR_paramGet(readers[readerID], TMR_PARAM_RADIO_READPOWER , &current);
+
+	printf("Max transmission power is: %i\n", max);
+	printf("Min transmission power is: %i\n", min);
+	printf("Current transmission power is: %i\n", current);
+
+	checkError(TMR_startReading(readers[readerID]), "Starting reader");
+}
+
+int setPower(int readerID, int value)
+{
+	printf("Setting read power\n");
+
+	checkError(TMR_stopReading(readers[readerID]), "Stopping Reader for power reading");
+	if(checkError(TMR_paramSet(readers[readerID], TMR_PARAM_RADIO_READPOWER, &value), "Setting Radio Power"))
+	{
+		return -1;
+	}
+	checkError(TMR_startReading(readers[readerID]), "Starting reader");
+	return 0;
+}
+
+void getHopTime(int readerID)
+{
+	checkError(TMR_stopReading(readers[readerID]), "Stopping reader for hop time reading");
+
+	uint32_t hoptimeval;
+
+	TMR_paramGet(readers[readerID], TMR_PARAM_REGION_HOPTIME, &hoptimeval);
+	//TMR_paramGet(readers[readerID], TMR_PARAM_REGION_HOPTABLE, &);
+
+	printf("HOPTIME: %" PRIu32  "\n", hoptimeval);
+	//printf("HOPTABLE: \n");
+
+	checkError(TMR_startReading(readers[readerID]), "Starting Reader");
+
+}
+
+void setHopTime(int readerID, int value)
+{
+	uint32_t hoptime = (uint32_t) value;
+
+	printf("New hoptime is: %" PRIu32 "\n", hoptime);
+
+	checkError(TMR_stopReading(readers[readerID]), "Stopping reader for hop time reading");
+
+	checkError(TMR_paramSet(readers[readerID], TMR_PARAM_REGION_HOPTIME, &hoptime), "Setting hoptime");
+
+	checkError(TMR_startReading(readers[readerID]), "Starting reader");
+
+}
+
 int setParameter(const char* parameterS, const char* value)
 {
+	return 0;
 	/*int parameter = getEnum(parameterS);
 
 	if(checkError(TMR_paramSet(readerp, parameter, value), "Setting External Parameter"))
@@ -223,7 +286,6 @@ int setParameter(const char* parameterS, const char* value)
 	{
 		return 0;
 	}*/
-	return 0;
 }
 
 /*

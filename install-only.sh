@@ -13,18 +13,18 @@ make clean &> /dev/null
 
 echo "Installing RFID libraries"
 
-ln -s libmercuryrfid.so.1.0 lib/libmercuryrfid.so.1 &> /dev/null
+ln -s libmercuryrfid.so.1.0 build/libmercuryrfid.so.1 &> /dev/null
 
-cp lib/libltkc.so.1 /usr/lib/
-cp lib/libltkctm.so.1 /usr/lib/
-cp lib/libmercuryapi.so.1 /usr/lib/
-cp lib/libmercuryrfid.so.1.0 /usr/lib/
-cp lib/libmercuryrfid.so.1 /usr/lib
+cp build/libltkc.so.1 /usr/lib/
+cp build/libltkctm.so.1 /usr/lib/
+cp build/libmercuryapi.so.1 /usr/lib/
+cp build/libmercuryrfid.so.1.0 /usr/lib/
+cp build/libmercuryrfid.so.1 /usr/lib
 
 echo "Installing Python Module"
 
-cp src/rfid.py lib/rfid.py
-chmod +x lib/rfid.py
-cp lib/rfid.py /usr/lib/python2.7/rfid.py
+cp src/clients/python/rfid.py build/clients/python/rfid.py
+chmod +x build/clients/python/rfid.py
+cp build/clients/python/rfid.py /usr/lib/python2.7/rfid.py
 
 echo "Finished Installing"
