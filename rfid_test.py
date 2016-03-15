@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import rfid
 
 def myCallback(message):

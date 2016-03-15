@@ -25,10 +25,10 @@ class Communicator(threading.Thread):
 				if msg == "exit":
 					break
 				else:
-					print msg
+					#print msg
 					#msg = {"reader":msg[0], "tag":msg[1], "rssi":msg[2], "phase":msg[3], "frequency":msg[4], "timestamp-low":msg[5], "timestamp-high":msg[6]}
 					#msg = {"tag":msg[0], "rssi":msg[1], "phase":msg[2], "frequency":msg[3], "timestamp-low":msg[4], "timestamp-high":msg[5]}
-					#callbackList[int(msg["reader"])](msg)
+					callbackList[0](msg)
 			except:
 				print "Unexpected error in thread communicator: " + str(sys.exc_info()[0])
 
