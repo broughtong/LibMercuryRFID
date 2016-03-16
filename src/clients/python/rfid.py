@@ -91,6 +91,8 @@ def startReader(deviceURI, callbackFunction):
 
 	readerID = lib.startReader(deviceURI, callbackHandler.callback)
 
+	lib.RFIDinit()
+	#lib.RFIDclose()
 	#lib.getHopTime(readerID)
 	#lib.setHopTime(readerID, 100)
 
@@ -108,5 +110,6 @@ def close():
 	global communicatorQueue, lib, callbackList
 
 	communicatorQueue.put("exit")
-	lib.closeRFID()
+	#lib.closeRFID()
+	lib.RFIDclose()
 	callbackList = {}

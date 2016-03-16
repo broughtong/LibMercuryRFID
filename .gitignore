@@ -4,4 +4,4 @@ __pycache__/
 *.so.*
 *.o
 src/lib/mercury/
-
+build/

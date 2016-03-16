@@ -5,6 +5,7 @@
 #include <inttypes.h>
 
 #include "tm_reader.h"
+#include "queue.h"
 
 int readerCount = 0;
 int uniqueReaderInstance = 0;
@@ -27,6 +28,55 @@ int run(const char* deviceURI, PythonCallback python);
 int closeRFID();
 int checkError(TMR_Status status, const char* msg);
 int getEnum(const char* string);
+
+void* communicatorThreadFunction();
+
+int RFIDinit()
+{
+	pthread_t communicatorThread;
+	pthread_create(&communicatorThread, NULL, communicatorThreadFunction, NULL);
+
+	return 0;
+}
+
+int RFIDclose()
+{
+	int i;
+
+	for(i = 0; i < readerCount; i++)
+	{
+		TMR_stopReading(readers[i]);
+		free(readers[i]);
+		free(plan[i]);
+		free(rlb[i]);
+		free(reb[i]);
+		free(region[i]);
+		free(status[i]);
+		free(model[i]);
+	}
+
+	free(readers);
+	free(plan);
+	free(rlb);
+	free(reb);
+	free(region);
+	free(status);
+	free(model);
+
+	return 0;
+}
+
+void* communicatorThreadFunction()
+{
+	int isThreadRunning = 1;
+
+	while(isThreadRunning)
+	{
+		printf("running!!!\n");
+		break;
+	}
+	return NULL;
+}
 
 void tagCallback(TMR_Reader *readerr, const TMR_TagReadData *t, void *cookie)
 {
