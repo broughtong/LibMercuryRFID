@@ -8,8 +8,12 @@ fi
 sudo apt-get install -y python make
 
 echo "Building Library..."
+
+mkdir -p build/lib &> /dev/null
+mkdir build/clients &> /dev/null
+
 make > /dev/null
-make clean &> /dev/null
+cp lib/* build/lib
 
 echo "Adding User to correct groups"
 sudo usermod -a -G dialout $USER
@@ -38,15 +42,16 @@ echo "Installing RFID libraries"
 
 ln -s libmercuryrfid.so.1.0 build/libmercuryrfid.so.1 &> /dev/null
 
-cp build/libltkc.so.1 /usr/lib/
-cp build/libltkctm.so.1 /usr/lib/
-cp build/libmercuryapi.so.1 /usr/lib/
-cp build/libmercuryrfid.so.1.0 /usr/lib/
-cp build/libmercuryrfid.so.1 /usr/lib
+cp build/lib/libltkc.so.1 /usr/lib/
+cp build/lib/libltkctm.so.1 /usr/lib/
+cp build/lib/libmercuryapi.so.1 /usr/lib/
+cp build/lib/libmercuryrfid.so.1.0 /usr/lib/
+cp build/lib/libmercuryrfid.so.1 /usr/lib
 
 echo "Installing Python Module"
 
-cp src/rfid.py build/clients/python/rfid.py
+mkdir build/clients/python &> /dev/null
+cp src/clients/python/rfid.py build/clients/python/rfid.py
 chmod +x build/clients/python/rfid.py
 cp build/clients/python/rfid.py /usr/lib/python2.7/rfid.py
 
