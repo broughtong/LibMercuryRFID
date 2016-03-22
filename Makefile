@@ -1,4 +1,6 @@
-OBJS = build/lib/libmercuryrfid.o build/lib/enums.o
+SHELL := /bin/bash
+
+OBJS = build/lib/libmercuryrfid.o build/lib/enums.o build/lib/queue.o
 CC = gcc
 IFLAGS = -Isrc/lib/mercury/api/lib/LTK/LTKC/Library -Isrc/lib/mercury/api/lib/LTK/LTKC/Library/LLRP.org -Isrc/lib/mercury/api
 CFLAGS = -fPIC -Wall -Werror -c
@@ -16,6 +18,9 @@ build/lib/libmercuryrfid.o: src/lib/libmercuryrfid.c
 
 build/lib/enums.o: src/lib/enums.c
 	$(CC) $(CFLAGS) $(IFLAGS) src/lib/enums.c -o build/lib/enums.o
+
+build/lib/queue.o: src/lib/queue.c
+	$(CC) $(CFLAGS) $(IFLAGS) src/lib/queue.c -o build/lib/queue.o
 
 .PHONY: clean
 clean:

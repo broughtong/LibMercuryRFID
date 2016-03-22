@@ -8,23 +8,32 @@ Queue* createQueue()
 {
 	Queue *q;
 	q = (Queue*)malloc(sizeof(Queue));
-	q->firstElement = NULL;
-	q->lastElement = NULL;
+	if(!q)
+	{
+		return NULL;
+	}
 
 	if(pthread_mutex_init(&q->EnqueueLock, NULL) != 0)
 	{
+		free(q);
 		return NULL;
 	}
-	
+
 	if(pthread_mutex_init(&q->DequeueLock, NULL) != 0)
 	{
+		pthread_mutex_destroy(&q->EnqueueLock);
+		free(q);
 		return NULL;
 	}
+
+
+	q->firstElement = NULL;
+	q->lastElement = NULL;
 
 	return q;
 }
 
-void Enqueue(struct QueueStructure *q, int data)
+void Enqueue(struct QueueStructure *q, char* data)
 {
 	pthread_mutex_lock(&q->EnqueueLock);
 
@@ -52,16 +61,17 @@ void Enqueue(struct QueueStructure *q, int data)
 	pthread_mutex_unlock(&q->EnqueueLock);
 }
 
-int Dequeue(struct QueueStructure *q)
+char* Dequeue(struct QueueStructure *q)
 {
 	pthread_mutex_lock(&q->DequeueLock);
 
 	if(q->firstElement == NULL)
 	{
-		return -1;
+		pthread_mutex_unlock(&q->DequeueLock);
+		return NULL;
 	}
 
-	int data = q->firstElement->data;
+	char* data = q->firstElement->data;
 
 	struct QueueElement* oldNext = q->firstElement;
 	struct QueueElement* newNext = q->firstElement->nextElement;
@@ -77,6 +87,8 @@ int Dequeue(struct QueueStructure *q)
 
 void deleteQueue(struct QueueStructure *q)
 {
+	//traverse q deleteing elements
+	free(q);
 	pthread_mutex_destroy(&q->EnqueueLock);
 	pthread_mutex_destroy(&q->DequeueLock);
 }

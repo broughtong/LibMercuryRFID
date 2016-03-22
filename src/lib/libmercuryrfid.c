@@ -29,18 +29,23 @@ int closeRFID();
 int checkError(TMR_Status status, const char* msg);
 int getEnum(const char* string);
 
+typedef int ReaderID;
 void* communicatorThreadFunction();
+Queue* communicatorQueue;
 
 int RFIDinit()
 {
+	communicatorQueue = createQueue();
 	pthread_t communicatorThread;
-	pthread_create(&communicatorThread, NULL, communicatorThreadFunction, NULL);
+	pthread_create(&communicatorThread, NULL, communicatorThreadFunction, (void*) communicatorQueue);
 
 	return 0;
 }
 
 int RFIDclose()
 {
+	Enqueue(communicatorQueue, "exit");
+
 	int i;
 
 	for(i = 0; i < readerCount; i++)
@@ -66,15 +71,33 @@ int RFIDclose()
 	return 0;
 }
 
-void* communicatorThreadFunction()
+void* communicatorThreadFunction(void* messageQueue)
 {
 	int isThreadRunning = 1;
 
 	while(isThreadRunning)
 	{
-		printf("running!!!\n");
-		break;
+		char* message = Dequeue(messageQueue);
+
+		if(message != NULL)
+		{
+			printf("message receivde\n");
+			if(strcmp(message, "exit") == 0)
+			{
+				isThreadRunning = 0;
+			}
+			else
+			{
+				printf("thread saw a tag!!: %c%c%c%c\n", message[0], message[1], message[2], message[3]);
+			}
+		}
+		else
+		{
+			//int milliseconds = 10;
+			//usleep(1*milliseconds);
+		}
 	}
+	printf("closing\n");
 	return NULL;
 }
 
@@ -88,26 +111,28 @@ void tagCallback(TMR_Reader *readerr, const TMR_TagReadData *t, void *cookie)
 	char tagFrequency[20];
 	char tagTimeStampHigh[20];
 	char tagTimeStampLow[20];
-	
+
 	TMR_bytesToHex(t->tag.epc, t->tag.epcByteCount, tagID);
 	data[0] = tagID;
 
-	sprintf(tagRSSI, "%d", t->rssi);	
+	sprintf(tagRSSI, "%d", t->rssi);
 	data[1] = tagRSSI;
 
-	sprintf(tagPhase, "%i", t->phase);	
+	sprintf(tagPhase, "%i", t->phase);
 	data[2] = tagPhase;
 
-	sprintf(tagFrequency, "%i", t->frequency);	
+	sprintf(tagFrequency, "%i", t->frequency);
 	data[3] = tagFrequency;
 
-	sprintf(tagTimeStampHigh, "%i", t->timestampHigh);	
+	sprintf(tagTimeStampHigh, "%i", t->timestampHigh);
 	data[4] = tagTimeStampHigh;
 
-	sprintf(tagTimeStampLow, "%ui", t->timestampLow);	
+	sprintf(tagTimeStampLow, "%ui", t->timestampLow);
 	data[5] = tagTimeStampLow;
 
 	pythonCallback(data);
+
+	Enqueue(communicatorQueue, tagRSSI);
 
 	free(data);
 }
@@ -138,7 +163,7 @@ int startReader(const char* deviceURI, PythonCallback callbackHandle)
 	rlb = realloc(rlb, (readerCount + 1) * sizeof(TMR_ReadListenerBlock*));
 	TMR_ReadListenerBlock* prlb = malloc(sizeof(TMR_ReadListenerBlock));
 	rlb[readerCount] = prlb;
-	
+
 	reb = realloc(reb, (readerCount + 1) * sizeof(TMR_ReadExceptionListenerBlock*));
 	TMR_ReadExceptionListenerBlock* preb = malloc(sizeof(TMR_ReadExceptionListenerBlock));
 	reb[readerCount] = preb;
@@ -163,7 +188,7 @@ int startReader(const char* deviceURI, PythonCallback callbackHandle)
 	{
 		return -1;
 	}
-	
+
 	*(region[readerCount]) = TMR_REGION_NONE;
 	if(checkError(TMR_paramGet(readers[readerCount], TMR_PARAM_REGION_ID, region[readerCount]), "Getting Saved Region"))
 	{
@@ -184,7 +209,7 @@ int startReader(const char* deviceURI, PythonCallback callbackHandle)
 		{
 			return -1;
 		}
-		
+
 		if(regions.len < 1)
 		{
 			printf("Reader doesn't support any regions\n");
@@ -343,7 +368,7 @@ void* getParameter(const char* parameterS
 {
 	int parameter = getEnum(parameterS);
 
-	if(checkError(TMR_paramSet(readerp, parameter, 
+	if(checkError(TMR_paramSet(readerp, parameter,
 
 
 }*/

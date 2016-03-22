@@ -19,5 +19,5 @@ Queue* createQueue();
 
 void Enqueue(struct QueueStructure *q, char* data);
 
-int Dequeue(struct QueueStructure *q);
+char* Dequeue(struct QueueStructure *q);
 
