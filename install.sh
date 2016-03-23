@@ -25,7 +25,7 @@ plugged="$(ls /dev | grep "ttyUSB")"
 
 fileList="$(diff <(echo "$unplugged") <(echo "$plugged"))"
 
-arr=(${fileList// / })
+array=(${fileList// / })
 
 for element in "${array[@]}"
 do
