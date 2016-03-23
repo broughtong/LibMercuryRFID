@@ -1,7 +1,5 @@
 __pycache__/
 *.py[cod]
 *~
-src/lib/mercury/
 build/
-lib/
 *.swp
