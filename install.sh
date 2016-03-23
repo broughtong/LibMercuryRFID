@@ -24,7 +24,17 @@ read -p "Now plug the RFID reader in and then press enter" dummy
 plugged="$(ls /dev | grep "ttyUSB")"
 
 fileList="$(diff <(echo "$unplugged") <(echo "$plugged"))"
-file="$(echo $fileList | cut -d " " -f 5)"
+
+arr=(${fileList// / })
+
+for element in "${array[@]}"
+do
+	if [[ $element == "ttyUSB"* ]]
+	then
+		file="$element"
+	fi
+done
+
 echo RFID detected at: $file
 echo "Persistant symlink created at /dev/rfid for this device"
 
@@ -32,7 +42,7 @@ prod="$(udevadm info -a -n /dev/$file | grep '{idProduct}' | head -n1 | tr -d '[
 vend="$(udevadm info -a -n /dev/$file | grep '{idVendor}' | head -n1 | tr -d '[[:space:]]')"
 seri="$(udevadm info -a -n /dev/$file | grep '{serial}' | head -n1 | tr -d '[[:space:]]')"
 
-echo "SUBSYSTEM==\"tty\", $vend, $prod, $seri, SYMLINK+=\"rfid\"" > /etc/udev/rules.d/99-virtual-usb.rules
+echo "SUBSYSTEM==\"tty\", $vend, $prod, $seri, SYMLINK+=\"rfid\"" > /etc/udev/rules.d/64-persistant-rfid.rules
 
 sudo udevadm control --reload-rules
 

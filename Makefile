@@ -2,10 +2,10 @@ SHELL := /bin/bash
 
 OBJS = build/lib/libmercuryrfid.o build/lib/enums.o build/lib/queue.o
 CC = gcc
-IFLAGS = -Isrc/lib/mercury/api/lib/LTK/LTKC/Library -Isrc/lib/mercury/api/lib/LTK/LTKC/Library/LLRP.org -Isrc/lib/mercury/api
+IFLAGS = -Isrc/lib/mercury/lib/LTK/LTKC/Library -Isrc/lib/mercury/lib/LTK/LTKC/Library/LLRP.org -Isrc/lib/mercury/
 CFLAGS = -fPIC -Wall -Werror -c
 LFLAGS = -shared -Wall -Wl,-soname,libmercuryrfid.so.1
-LIBS = src/lib/mercury/api/libmercuryapi.so.1 -lpthread  src/lib/mercury/api/lib/LTK/LTKC/Library/libltkc.so.1 src/lib/mercury/api/lib/LTK/LTKC/Library/LLRP.org/libltkctm.so.1
+LIBS = lib/libmercuryapi.so.1 -lpthread lib/libltkc.so.1 lib/libltkctm.so.1
 
 .PHONY: all
 all: build/lib/libmercuryrfid.so.1.0
