@@ -7,67 +7,39 @@ import threading
 import Queue
 
 lib = ""
-communicatorQueue = ""
 callbackList = ""
-comThread = ""
 callbackHandler = ""
-
-class Communicator(threading.Thread):
-
-	def __init__(self, messageQueue):
-		super(Communicator, self).__init__()
-		self.messageQueue = messageQueue
-
-	def run(self):
-		while True:
-			try:
-				msg = self.messageQueue.get(True)
-				if msg == "exit":
-					break
-				else:
-					#print msg
-					#msg = {"reader":msg[0], "tag":msg[1], "rssi":msg[2], "phase":msg[3], "frequency":msg[4], "timestamp-low":msg[5], "timestamp-high":msg[6]}
-					#msg = {"tag":msg[0], "rssi":msg[1], "phase":msg[2], "frequency":msg[3], "timestamp-low":msg[4], "timestamp-high":msg[5]}
-					callbackList[0](msg)
-			except:
-				print "Unexpected error in thread communicator: " + str(sys.exc_info()[0])
 
 class CallbackHandler(object):
 
-	def __init__(self, messageQueue):
+	def __init__(self):
 		super(CallbackHandler, self).__init__()
-		self.messageQueue = messageQueue
-		self.callback = ctypes.CFUNCTYPE(ctypes.c_byte, ctypes.POINTER(ctypes.POINTER(ctypes.c_char)))(self.callbackHandler)
+		self.callback = ctypes.CFUNCTYPE(ctypes.c_byte, ctypes.POINTER(ctypes.c_char))(self.callbackHandler)
 
-	def callbackHandler(self, char_ptr_ptr):
-		taginfo = []
+	def callbackHandler(self, char_ptr):
 
-		for i in xrange(0, 6):
-			taginfo.append("")
-			try:
-				for j in char_ptr_ptr[i]:
-					if j == "\0":
-						break
-					else:
-						taginfo[i] += j
-			except:
-				print "index error?" + str(i) + "\n"
+		tagString = ""
 
-		self.messageQueue.put(taginfo)
-		
+		try:
+			for i in char_ptr:
+				if i == "\0":
+					break
+				else:
+					tagString += i
+		except:
+			print "Indexing Error: Pointer To String Conversion In Wrapper\n"
+
+		callbackList[0](tagString)
+
 		return 0
 
 def init():
 
-	global communicatorQueue, comThread, lib, callbackHandler, callbackList
-
-	communicatorQueue = Queue.Queue()
-	comThread = Communicator(communicatorQueue)
-	comThread.start()
+	global lib, callbackHandler, callbackList
 
 	lib = ctypes.CDLL("libmercuryrfid.so.1")
 
-	callbackHandler = CallbackHandler(communicatorQueue)
+	callbackHandler = CallbackHandler()
 
 	callbackList = {}
 
@@ -107,9 +79,8 @@ def stopReader(readerID):
 
 def close():
 
-	global communicatorQueue, lib, callbackList
+	global lib, callbackList
 
-	communicatorQueue.put("exit")
 	#lib.closeRFID()
 	lib.RFIDclose()
 	callbackList = {}

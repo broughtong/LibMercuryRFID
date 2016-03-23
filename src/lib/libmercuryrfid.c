@@ -23,6 +23,9 @@ int16_t antennaMinPower;
 typedef void (*PythonCallback)(char** message);
 PythonCallback pythonCallback;
 
+typedef void (*ForeignCallback)(char* message);
+ForeignCallback foreignCallback;
+
 void callback(TMR_Reader *reader, const TMR_TagReadData *t, void *cookie);
 int run(const char* deviceURI, PythonCallback python);
 int closeRFID();
@@ -88,13 +91,15 @@ void* communicatorThreadFunction(void* messageQueue)
 			}
 			else
 			{
-				printf("thread saw a tag!!: %c%c%c%c\n", message[0], message[1], message[2], message[3]);
+				printf("thread saw a tag!!: %s\n", message);
+				foreignCallback(message);
+				printf("thread message send!\n");
 			}
 		}
 		else
 		{
-			//int milliseconds = 10;
-			//usleep(1*milliseconds);
+			int milliseconds = 5;
+			usleep(1000*milliseconds);
 		}
 	}
 	printf("closing\n");
@@ -130,9 +135,10 @@ void tagCallback(TMR_Reader *readerr, const TMR_TagReadData *t, void *cookie)
 	sprintf(tagTimeStampLow, "%ui", t->timestampLow);
 	data[5] = tagTimeStampLow;
 
-	pythonCallback(data);
+	char msg[256];
+	sprintf(msg, "%s:%d:%i:%i:%i:%ui", tagID, t->rssi, t->phase, t->frequency, t->timestampHigh, t->timestampLow);
 
-	Enqueue(communicatorQueue, tagRSSI);
+	Enqueue(communicatorQueue, msg);
 
 	free(data);
 }
@@ -142,7 +148,7 @@ void exceptionCallback(TMR_Reader *reader, TMR_Status error, void *cookie)
 	fprintf(stderr, "Error:%s\n", TMR_strerr(reader, error));
 }
 
-int startReader(const char* deviceURI, PythonCallback callbackHandle)
+int startReader(const char* deviceURI, ForeignCallback callbackHandle)
 {
 	if(callbackHandle == NULL)
 	{
@@ -150,7 +156,7 @@ int startReader(const char* deviceURI, PythonCallback callbackHandle)
 		return -1;
 	}
 
-	pythonCallback = callbackHandle;
+	foreignCallback = callbackHandle;
 
 	readers = realloc(readers, (readerCount + 1) * sizeof(TMR_Reader*));
 	TMR_Reader* pr = malloc(sizeof(TMR_Reader));

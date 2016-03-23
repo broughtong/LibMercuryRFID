@@ -50,7 +50,7 @@ echo "Settings updated, unplug and replug rfid device for /dev/rfid to appear"
 
 echo "Installing RFID libraries"
 
-ln -s libmercuryrfid.so.1.0 build/libmercuryrfid.so.1 &> /dev/null
+ln -s libmercuryrfid.so.1.0 build/lib/libmercuryrfid.so.1 &> /dev/null
 
 cp build/lib/libltkc.so.1 /usr/lib/
 cp build/lib/libltkctm.so.1 /usr/lib/
