@@ -10,36 +10,32 @@ lib = ""
 callbackList = ""
 callbackHandler = ""
 
-class CallbackHandler(object):
+def callbackHandlerFunction(char_ptr):
+	callbackString = ""
 
-	def __init__(self):
-		super(CallbackHandler, self).__init__()
-		self.callback = ctypes.CFUNCTYPE(ctypes.c_byte, ctypes.POINTER(ctypes.c_char))(self.callbackHandler)
+	try:
 
-	def callbackHandler(self, char_ptr):
+		for i in char_ptr:
+			if i == "\0":
+				break
+			else:
+				callbackString += i
 
-		tagString = ""
+	except:
+		print "Indexing Error: Pointer to string conversion in wrapper\n"
 
-		try:
-			for i in char_ptr:
-				if i == "\0":
-					break
-				else:
-					tagString += i
-		except:
-			print "Indexing Error: Pointer To String Conversion In Wrapper\n"
+	callbackList[0](callbackString)
 
-		callbackList[0](tagString)
+	return 0
 
-		return 0
+callback = ctypes.CFUNCTYPE(ctypes.c_byte, ctypes.POINTER(ctypes.c_char))(callbackHandlerFunction)
 
 def init():
 
 	global lib, callbackHandler, callbackList
 
 	lib = ctypes.CDLL("libmercuryrfid.so.1")
-
-	callbackHandler = CallbackHandler()
+	lib.RFIDinit(callback)
 
 	callbackList = {}
 
@@ -61,9 +57,8 @@ def startReader(deviceURI, callbackFunction):
 
 	global lib, callbackList, callbackHandler
 
-	readerID = lib.startReader(deviceURI, callbackHandler.callback)
+	readerID = lib.startReader(deviceURI)
 
-	lib.RFIDinit()
 	#lib.RFIDclose()
 	#lib.getHopTime(readerID)
 	#lib.setHopTime(readerID, 100)
