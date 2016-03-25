@@ -88,16 +88,16 @@ void* communicatorThreadFunction(void* messageQueue)
 
 		if(message != NULL)
 		{
-			printf("message receivde\n");
+			//printf("message receivde\n");
 			if(strcmp(message, "exit") == 0)
 			{
 				isThreadRunning = 0;
 			}
 			else
 			{
-				printf("thread saw a tag!!: %s\n", message);
+				//printf("thread saw a tag!!: %s\n", message);
 				foreignCallback(message);
-				printf("thread message send!\n");
+				//printf("thread message send!\n");
 			}
 		}
 		else
