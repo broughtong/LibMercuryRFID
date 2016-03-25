@@ -20,15 +20,10 @@ TMR_String** model = NULL;
 int16_t antennaMaxPower;
 int16_t antennaMinPower;
 
-typedef void (*PythonCallback)(char** message);
-PythonCallback pythonCallback;
-
 typedef void (*ForeignCallback)(char* message);
 ForeignCallback foreignCallback;
 
 void callback(TMR_Reader *reader, const TMR_TagReadData *t, void *cookie);
-int run(const char* deviceURI, PythonCallback python);
-int closeRFID();
 int checkError(TMR_Status status, const char* msg);
 int getEnum(const char* string);
 
@@ -36,8 +31,16 @@ typedef int ReaderID;
 void* communicatorThreadFunction();
 Queue* communicatorQueue;
 
-int RFIDinit()
+int RFIDinit(ForeignCallback callbackHandle)
 {
+	if(callbackHandle == NULL)
+	{
+		printf("Error: No callback function provided\n");
+		return -1;
+	}
+
+	foreignCallback = callbackHandle;
+
 	communicatorQueue = createQueue();
 	pthread_t communicatorThread;
 	pthread_create(&communicatorThread, NULL, communicatorThreadFunction, (void*) communicatorQueue);
@@ -54,6 +57,7 @@ int RFIDclose()
 	for(i = 0; i < readerCount; i++)
 	{
 		TMR_stopReading(readers[i]);
+		TMR_destroy(readers[i]);
 		free(readers[i]);
 		free(plan[i]);
 		free(rlb[i]);
@@ -108,39 +112,24 @@ void* communicatorThreadFunction(void* messageQueue)
 
 void tagCallback(TMR_Reader *readerr, const TMR_TagReadData *t, void *cookie)
 {
-	char** data = malloc(sizeof(char*) * 6);
+	int i;
+	int readerLocation;
+
+	for(i = 0; i < uniqueReaderInstance; i++)
+	{
+		if(readers[i] == readerr)
+		{
+			readerLocation = i;
+		}
+	}
 
 	char tagID[128];
-	char tagRSSI[20];
-	char tagPhase[20];
-	char tagFrequency[20];
-	char tagTimeStampHigh[20];
-	char tagTimeStampLow[20];
-
 	TMR_bytesToHex(t->tag.epc, t->tag.epcByteCount, tagID);
-	data[0] = tagID;
-
-	sprintf(tagRSSI, "%d", t->rssi);
-	data[1] = tagRSSI;
-
-	sprintf(tagPhase, "%i", t->phase);
-	data[2] = tagPhase;
-
-	sprintf(tagFrequency, "%i", t->frequency);
-	data[3] = tagFrequency;
-
-	sprintf(tagTimeStampHigh, "%i", t->timestampHigh);
-	data[4] = tagTimeStampHigh;
-
-	sprintf(tagTimeStampLow, "%ui", t->timestampLow);
-	data[5] = tagTimeStampLow;
 
 	char msg[256];
-	sprintf(msg, "%s:%d:%i:%i:%i:%ui", tagID, t->rssi, t->phase, t->frequency, t->timestampHigh, t->timestampLow);
+	sprintf(msg, "%i:%s:%d:%i:%i:%i:%ui", readerLocation, tagID, t->rssi, t->phase, t->frequency, t->timestampHigh, t->timestampLow);
 
 	Enqueue(communicatorQueue, msg);
-
-	free(data);
 }
 
 void exceptionCallback(TMR_Reader *reader, TMR_Status error, void *cookie)
@@ -148,16 +137,8 @@ void exceptionCallback(TMR_Reader *reader, TMR_Status error, void *cookie)
 	fprintf(stderr, "Error:%s\n", TMR_strerr(reader, error));
 }
 
-int startReader(const char* deviceURI, ForeignCallback callbackHandle)
+int startReader(const char* deviceURI)
 {
-	if(callbackHandle == NULL)
-	{
-		printf("Error: No callback function provided\n");
-		return -1;
-	}
-
-	foreignCallback = callbackHandle;
-
 	readers = realloc(readers, (readerCount + 1) * sizeof(TMR_Reader*));
 	TMR_Reader* pr = malloc(sizeof(TMR_Reader));
 	readers[readerCount] = pr;
@@ -267,18 +248,6 @@ int startReader(const char* deviceURI, ForeignCallback callbackHandle)
 
 int stopReader()
 {
-	return 0;
-}
-
-int closeRFID()
-{
-	/*if(checkError(TMR_stopReading(readerp), "Stopping Reader"))
-	{
-		return -1;
-	}
-
-	TMR_destroy(readerp);*/
-
 	return 0;
 }
 
