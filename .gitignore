@@ -3,3 +3,10 @@ __pycache__/
 *~
 build/
 *.swp
+/src/clients/ros/cfg/cpp/rfid/rfid_inventory_paramsConfig.h
+/src/clients/ros/docs/rfid_inventory_paramsConfig.dox
+/src/clients/ros/docs/rfid_inventory_paramsConfig-usage.dox
+/src/clients/ros/docs/rfid_inventory_paramsConfig.wikidoc
+/src/clients/ros/src/rfid/cfg/__init__.py
+/src/clients/ros/src/rfid/cfg/rfid_inventory_paramsConfig.py
+/src/clients/ros/src/rfid/__init__.py

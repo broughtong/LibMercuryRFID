@@ -1,2 +1,6 @@
-# ros_rfid
-ROS package for RFID tag localisation
+# rfid
+ROS package for RFID tag operations
+Messages for tag data
+Localisation
+Inventoring
+ 

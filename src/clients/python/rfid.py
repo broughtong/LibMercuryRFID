@@ -72,6 +72,13 @@ def stopReader(readerID):
 
 	lib.stopReader(readerID)
 
+def setPower(readerID, value):
+
+	global lib
+
+	time = lib.setPower(readerID, value)
+
+
 def close():
 
 	global lib, callbackList
