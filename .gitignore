@@ -10,3 +10,4 @@ build/
 /src/clients/ros/src/rfid/cfg/__init__.py
 /src/clients/ros/src/rfid/cfg/rfid_inventory_paramsConfig.py
 /src/clients/ros/src/rfid/__init__.py
+/src/clients/ros/scripts/.idea/*

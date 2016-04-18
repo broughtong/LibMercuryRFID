@@ -72,6 +72,7 @@ def stopReader(readerID):
 
 	lib.stopReader(readerID)
 
+# in 100*dBm 
 def setPower(readerID, value):
 
 	global lib

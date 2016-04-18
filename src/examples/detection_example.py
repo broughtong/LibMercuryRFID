@@ -52,4 +52,23 @@ def rfidCallback(message):
 			print "Detected " + friendlyName +  " tag with RSSI "  + rssi  +  " and phase " + phase
 			walletCounter=0
 
- 
+
+if __name__ == "__main__":
+
+	rfid.init()
+	reader = rfid.startReader("tmr:///dev/rfid", rfidCallback)
+
+	print rfid.getHopTime(reader) #defaults to 375
+	rfid.setHopTime(reader, 40)
+	print rfid.getHopTime(reader)
+
+	try:
+	    while True:
+	        time.sleep(1)
+	except KeyboardInterrupt:
+    	    pass
+	
+	print "bye"
+	rfid.stopReader(reader)
+	rfid.close()
+	

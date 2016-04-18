@@ -1,9 +1,9 @@
-#Single tag Data retrieved From M6e
+#Info retrieved from a tag M6e during an inventory
+#
+# ID         tag EPC code
+# TagStats   additional physical data (time, power, phase, freq) from tag readings
 
-time   timestamp
-string ID
-int32  rssi
-int32  phase
-int32  frequency
+string     ID
+TagStats[] stats
 
 # NOTE : WE ARE NOT READING TAG data!!
