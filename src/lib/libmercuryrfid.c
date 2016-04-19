@@ -127,7 +127,9 @@ void tagCallback(TMR_Reader *readerr, const TMR_TagReadData *t, void *cookie)
 	TMR_bytesToHex(t->tag.epc, t->tag.epcByteCount, tagID);
 
 	char msg[256];
-	sprintf(msg, "%i:%s:%d:%i:%i:%i:%ui", readerLocation, tagID, t->rssi, t->phase, t->frequency, t->timestampHigh, t->timestampLow);
+	sprintf(msg, "%i:%s:%d:%i:%i:%u:%u", readerLocation, tagID, t->rssi, t->phase, t->frequency, t->timestampHigh, t->timestampLow);
+
+	uint64_t timestamp = ((uint64_t) t->timestampHigh<< 32 ) | t->timestampLow;
 
 	Enqueue(communicatorQueue, msg);
 }

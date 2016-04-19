@@ -88,9 +88,18 @@ class RFID_Inventory():
         fields = str(message).split(':')
         tagID = fields[1]
 
+        #get timestamp from fields
+        timest =fields[6]
+
+        # solve error with lower bit timestamp containing an i
+        if timest.endswith("i"):
+            timest=timest[1:len(timest)-1]
+
+        timest= (fields[5]<<32) | timest
+
         # a Tag Stats message contains instantaneous transmission data
         tagSt = TagStats()
-        tagSt.timestamp = self.inventory_msg.endTime
+        tagSt.timestamp =  timest
         tagSt.rssi      = fields[2]
         tagSt.phase     = fields[3]
         tagSt.frequency = fields[4]
