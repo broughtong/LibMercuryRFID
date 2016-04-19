@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>rfid</name>
+  <name>rfid_node</name>
   <version>0.0.3</version>
   <description>The rfid package</description>
 

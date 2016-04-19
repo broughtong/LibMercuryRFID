@@ -10,22 +10,74 @@ import roslib
 import rospy
 import sys
 import time
-import rfid
+import rfid as m6e
 
 # Import custom message data 
-from rfid.msg import Inventory
-from rfid.msg import TagData
-from rfid.msg import TagStats
+from rfid_node.msg import Inventory
+from rfid_node.msg import TagData
+from rfid_node.msg import TagStats
+
+def rfidCallback(message):
+	global inventory_msg
+	global tag_dict
+
+	inventory_msg.endTime=rospy.get_rostime()
+
+	fields = str(message).split(':')
+	tagID = fields[1]
+
+	#get timestamp from fields
+	timestampHigh =int(fields[5])
+
+	# solve error with lower bit timestamp containing an i
+	timestampLowStr = fields[6]
+	if timestampLowStr.endswith("i"):
+	    timestampLowStr=timestampLowStr[1:len(timestampLowStr)-1]
+
+	timestampLow  =int(timestampLowStr)
+	# timestamp in milisecs
+	timest= ( timestampHigh<<32) | timestampLow
+
+	# a Tag Stats message contains instantaneous transmission data
+	tagSt = TagStats()
+	tagSt.timestamp.secs =  timest/1000
+	tagSt.timestamp.nsecs =  (timest%1000)*1000000
+	tagSt.rssi      = int(fields[2])
+	tagSt.phase     = int(fields[3])
+	tagSt.frequency = int(fields[4])
+
+	if tagID not in tag_dict:
+	    newTag = TagData()
+	    newTag.ID = tagID
+	    tag_dict[tagID]=newTag
+
+	tag_dict[tagID].stats.append(tagSt)
+        
+        # print tag data
+        if 0:
+          rospy.loginfo('Detected tag id: %s', tagID)
+          rospy.loginfo('RSSi = %s', fields[2])
+          rospy.loginfo('phase = %s', fields[3])
+          rospy.loginfo('frequency = %s', fields[4])
+          rospy.loginfo('Timestamp = %d', timest)
+
 
 # Node example class.
 class RFID_Inventory():
 	
     # Must have __init__(self) function for a class, similar to a C++ class constructor.
     def __init__(self):
+        global inventory_msg
+        global tag_dict
+
+        # Init our global vars...
+        inventory_msg = Inventory()
+        tag_dict = {}
+
         # Get the ~private namespace parameters from command line or launch file.
-        self.tinventory = float(rospy.get_param('~tinventory', '1.0'))
+        self.tinventory = float(rospy.get_param('~tinventory', '2.0'))
         self.trest = float(rospy.get_param('~trest', '1.0'))
-        self.txpower = float(rospy.get_param('~txpower', '1.0'))
+        self.txpower = int(rospy.get_param('~txpower', '2000'))
         self.topic = rospy.get_param('~topic', 'Inventory')
 
         rospy.loginfo('tinventory = %d', self.tinventory)
@@ -33,76 +85,50 @@ class RFID_Inventory():
         rospy.loginfo('trest = %d', self.trest)       
         rospy.loginfo('topic = %s', self.topic)
 
+	# Configure reader and launch
+	m6e.init()
+        reader = m6e.startReader("tmr:///dev/rfid", rfidCallback)
+        m6e.setHopTime(reader, 40)
+	m6e.getPower(reader)        
+        m6e.setPower(reader,self.txpower)
+	m6e.getPower(reader)
 
         # Create a publisher
-        pub = rospy.Publisher(self.topic, Inventory)
+        pub = rospy.Publisher(self.topic, Inventory,queue_size=10)
 
-        # Set the message to publish as our custom message.
-        self.inventory_msg = Inventory()
-        
+
+
+
+
         # Main while loop.
         while not rospy.is_shutdown():
             # Prepare custom mesage
-            self.inventory_msg.startTime = rospy.get_rostime()
-            self.inventory_msg.maxTimeMiliSecs = self.tinventory
-            self.inventory_msg.TxPower = self.txpower
-            self.inventory_msg.tagList = []
-            self.tag_dict = {}
-
+	    #inventory_msg = Inventory()
+            inventory_msg.startTime = rospy.get_rostime()
+            inventory_msg.maxTimeMiliSecs = int(self.tinventory)  # shall change msg to be a double...
+            inventory_msg.TxPower = self.txpower
+            inventory_msg.tagList = []
+            tag_dict = {}
             # get inventory: read tags for specified time
             self.getInventory()
-            self.inventory_msg.tagList = self.tag_dict.values()
+            inventory_msg.tagList = tag_dict.values()
 
             # publish them
-            pub.publish(self.inventory_msg)
+            pub.publish(inventory_msg)
 
             # Sleep for a while after publishing new messages
-            if trest:
-                rospy.sleep(trest)
-            else:
-                rospy.sleep(1.0)
+            rospy.sleep(self.trest)
+
 
 
     def getInventory(self):
-        rfid.init()
-        reader = rfid.startReader("tmr:///dev/rfid", self.rfidCallback)
-        rfid.setHopTime(reader, 40)
-        rfid.setPower(reader,self.txpower)
-
-        # reader will be detecting tags while sleeping... I hope
+	global tag_dict
+        rospy.loginfo('Starting inventory.............................' )
+        # reader will be detecting tags while this is sleeping... 
         rospy.sleep(self.tinventory)
-
-
-
-    def rfidCallback(message,self):
-        self.inventory_msg.endTime=rospy.get_rostime()
-
-        fields = str(message).split(':')
-        tagID = fields[1]
-
-        #get timestamp from fields
-        timest =fields[6]
-
-        # solve error with lower bit timestamp containing an i
-        if timest.endswith("i"):
-            timest=timest[1:len(timest)-1]
-
-        timest= (fields[5]<<32) | timest
-
-        # a Tag Stats message contains instantaneous transmission data
-        tagSt = TagStats()
-        tagSt.timestamp =  timest
-        tagSt.rssi      = fields[2]
-        tagSt.phase     = fields[3]
-        tagSt.frequency = fields[4]
-
-        if tagID not in self.tag_dict:
-            newTag = TagData()
-            newTag.ID = tagID
-            self.tag_dict[tagID]=newTag
-
-        self.tag_dict[tagID].stats.append(tagSt)
-
+	rospy.loginfo('Detected %d different tags:', len(tag_dict))
+	rospy.loginfo('%s', tag_dict.keys())
+        rospy.loginfo('Inventory ended   .............................' )
 
 
 

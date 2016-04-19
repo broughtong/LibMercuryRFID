@@ -72,12 +72,12 @@ def stopReader(readerID):
 
 	lib.stopReader(readerID)
 
-# in 100*dBm 
+# configures transmision power to value, given in 100*dBm (should be between 500 and 3000)
 def setPower(readerID, value):
 
 	global lib
 
-	time = lib.setPower(readerID, value)
+	lib.setPower(readerID, value)
 
 
 def close():
@@ -87,3 +87,12 @@ def close():
 	#lib.closeRFID()
 	lib.RFIDclose()
 	callbackList = {}
+
+# prints on screen current power configuration in 100*dBm
+# TODO return power value
+def getPower(readerID):
+
+        global lib
+
+        power = lib.getPower(readerID)
+

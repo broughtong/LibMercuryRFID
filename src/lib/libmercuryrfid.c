@@ -129,7 +129,7 @@ void tagCallback(TMR_Reader *readerr, const TMR_TagReadData *t, void *cookie)
 	char msg[256];
 	sprintf(msg, "%i:%s:%d:%i:%i:%u:%u", readerLocation, tagID, t->rssi, t->phase, t->frequency, t->timestampHigh, t->timestampLow);
 
-	uint64_t timestamp = ((uint64_t) t->timestampHigh<< 32 ) | t->timestampLow;
+	//uint64_t timestamp = ((uint64_t) t->timestampHigh<< 32 ) | t->timestampLow;
 
 	Enqueue(communicatorQueue, msg);
 }
@@ -284,25 +284,27 @@ void getPower(int readerID)
 
 int setPower(int readerID, int value)
 {
+	int hasError;
 	printf("Setting read power\n");
 
-	checkError(TMR_stopReading(readers[readerID]), "Stopping Reader for power reading");
-	if(checkError(TMR_paramSet(readers[readerID], TMR_PARAM_RADIO_READPOWER, &value), "Setting Radio Power"))
+	hasError=checkError(TMR_stopReading(readers[readerID]), "Stopping Reader for power reading");
+	hasError=checkError(TMR_paramSet(readers[readerID], TMR_PARAM_RADIO_READPOWER, &value), "Setting Radio Power");
+        if (!hasError)
 	{
-		return -1;
+	     hasError=checkError(TMR_startReading(readers[readerID]), "Starting reader");
 	}
-	checkError(TMR_startReading(readers[readerID]), "Starting reader");
-	return 0;
+	return hasError;
 }
 
 
 /**
  * Based on example code from API 1.27
- * TODO: test that actually works 
- * 
+ * TODO: test that actually works
+ *
  * */
 int writeTag(int readerId, uint8_t newEpcData[])
-{  
+{
+    int error;
     uint8_t epcData[] = {
       0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
       0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67,
@@ -313,29 +315,30 @@ int writeTag(int readerId, uint8_t newEpcData[])
 	/* Set the tag EPC to a known value*/
     epc.epcByteCount = sizeof(epcData) / sizeof(epcData[0]);
     memcpy(epc.epc, epcData, epc.epcByteCount * sizeof(uint8_t));
-    
-    checkError(TMR_TagOp_init_GEN2_WriteTag(&tagop, &epc), "initializing GEN2_WriteTag");
-    checkError(TMR_executeTagOp(readers[readerId], &tagop, NULL, NULL), "executing GEN2_WriteTag");
 
-   
-	{  /* Write Tag EPC with a select filter*/	  
+    error=checkError(TMR_TagOp_init_GEN2_WriteTag(&tagop, &epc), "initializing GEN2_WriteTag");
+    error=checkError(TMR_executeTagOp(readers[readerId], &tagop, NULL, NULL), "executing GEN2_WriteTag");
+
+
+    if (!error)
+    {  /* Write Tag EPC with a select filter*/	  
 	  TMR_TagFilter filter;
 	  TMR_TagData newEpc;
 	  TMR_TagOp newtagop;
 
 	  newEpc.epcByteCount = sizeof(newEpcData) / sizeof(newEpcData[0]);
-      memcpy(newEpc.epc, newEpcData, newEpc.epcByteCount * sizeof(uint8_t));
+          memcpy(newEpc.epc, newEpcData, newEpc.epcByteCount * sizeof(uint8_t));
 	  
 	  /* Initialize the new tagop to write the new epc*/	   
-	  checkError(TMR_TagOp_init_GEN2_WriteTag(&newtagop, &newEpc), "initializing GEN2_WriteTag");
+	  error=checkError(TMR_TagOp_init_GEN2_WriteTag(&newtagop, &newEpc), "initializing GEN2_WriteTag");
 
-      /* Initialize the filter with the original epc of the tag which is set earlier*/
-	  checkError(TMR_TF_init_tag(&filter, &epc), "initializing TMR_TagFilter");
+          /* Initialize the filter with the original epc of the tag which is set earlier*/
+	  error=checkError(TMR_TF_init_tag(&filter, &epc), "initializing TMR_TagFilter");
 
 	  /* Execute the tag operation Gen2 writeTag with select filter applied*/
-	  checkError(TMR_executeTagOp(readers[readerId], &newtagop, &filter, NULL), "executing GEN2_WriteTag");
+	  error=checkError(TMR_executeTagOp(readers[readerId], &newtagop, &filter, NULL), "executing GEN2_WriteTag");
 	}
-	
+	return error;
   }
 
 

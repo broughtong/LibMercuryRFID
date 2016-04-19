@@ -7,7 +7,7 @@ import rfid
 pub = ""
 
 def rfidCallback(message):
-	#msg = str(message[0]) + ":" + str(message[1]) + ":" + str(message[2]) + ":" + str(message[3]) + ":"
+	msg = str(message[0]) + ":" + str(message[1]) + ":" + str(message[2]) + ":" + str(message[3]) + ":"
 	# + ":" + str(message[4]) + ":" + str(message[5])
 	print str(msg)
 	
