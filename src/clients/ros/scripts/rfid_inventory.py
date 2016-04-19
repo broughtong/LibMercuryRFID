@@ -12,16 +12,10 @@ import sys
 import time
 import rfid
 
-# Give ourselves the ability to run a dynamic reconfigure server.
-from dynamic_reconfigure.server import Server as DynamicReconfigureServer
-
 # Import custom message data 
 from rfid.msg import Inventory
 from rfid.msg import TagData
 from rfid.msg import TagStats
-
-# Import also dynamic reconfigure variables .
-from node_rfid_inventory.cfg import rfid_inventory_paramsConfig as ConfigType
 
 # Node example class.
 class RFID_Inventory():
@@ -29,21 +23,19 @@ class RFID_Inventory():
     # Must have __init__(self) function for a class, similar to a C++ class constructor.
     def __init__(self):
         # Get the ~private namespace parameters from command line or launch file.
-        tinventory = float(rospy.get_param('~tinventory', '1.0'))
-        trest = float(rospy.get_param('~trest', '1.0'))
-        txpower = rospy.get_param('~txpower', '1.0')
-        topic = rospy.get_param('~topic', 'Inventory')
+        self.tinventory = float(rospy.get_param('~tinventory', '1.0'))
+        self.trest = float(rospy.get_param('~trest', '1.0'))
+        self.txpower = float(rospy.get_param('~txpower', '1.0'))
+        self.topic = rospy.get_param('~topic', 'Inventory')
 
-        rospy.loginfo('tinventory = %d', tinventory)
-        rospy.loginfo('txpower = %d', txpower)
-        rospy.loginfo('trest = %d', trest)       
-        rospy.loginfo('topic = %s', topic)
+        rospy.loginfo('tinventory = %d', self.tinventory)
+        rospy.loginfo('txpower = %d', self.txpower)
+        rospy.loginfo('trest = %d', self.trest)       
+        rospy.loginfo('topic = %s', self.topic)
 
-        # Create a dynamic reconfigure server and add reconfigure callback
-        self.server = DynamicReconfigureServer(ConfigType, self.reconfigure)
 
         # Create a publisher
-        pub = rospy.Publisher(topic, Inventory)
+        pub = rospy.Publisher(self.topic, Inventory)
 
         # Set the message to publish as our custom message.
         self.inventory_msg = Inventory()
@@ -112,14 +104,6 @@ class RFID_Inventory():
         self.tag_dict[tagID].stats.append(tagSt)
 
 
-    # Create a callback function for the dynamic reconfigure server.
-    def reconfigure(self, config, level):
-        # Fill in local variables with values received from dynamic reconfigure clients (typically the GUI).
-        self.tinventory = config["tinventory"]
-        self.trest = config["trest"]
-        self.txpower = config["txpower"]
-        # Return the new variables.
-        return config
 
 
 # Main function.

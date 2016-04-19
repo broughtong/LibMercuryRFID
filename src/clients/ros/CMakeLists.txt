@@ -8,7 +8,6 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   message_generation
-  dynamic_reconfigure
 )
 
 ## System dependencies are found with CMake's conventions
@@ -48,6 +47,7 @@ find_package(catkin REQUIRED COMPONENTS
  add_message_files(
    FILES
    TagData.msg
+   TagStats.msg
    Inventory.msg
  )
 
@@ -87,10 +87,6 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * uncomment the "generate_dynamic_reconfigure_options" section below
 ##     and list every .cfg file to be processed
 
-## Generate dynamic reconfigure parameters in the 'cfg' folder
-generate_dynamic_reconfigure_options(
-   cfg/node_rfid_inventory.cfg
- )
 
 ###################################
 ## catkin specific configuration ##
@@ -117,8 +113,7 @@ catkin_package(
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
-  ${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake
-) 
+ ) 
 
 ## Declare a C++ library
 # add_library(rfid_receive
@@ -141,6 +136,10 @@ include_directories(
 # target_link_libraries(rfid_receive_node
 #   ${catkin_LIBRARIES}
 # )
+
+
+# configure headers are built before any node uses them 
+#add_dependencies( rfid_inventory ${PROJECT_NAME}_gencfg)
 
 #############
 ## Install ##
