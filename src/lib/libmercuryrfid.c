@@ -248,9 +248,19 @@ int startReader(const char* deviceURI)
 	return (uniqueReaderInstance - 1);
 }
 
-int stopReader()
+int stopReader(int readerId)
 {
-	return 0;
+	int error;
+	error=checkError(TMR_stopReading(readers[readerId]), "Stopping reader");
+
+	return error;
+}
+
+int reStartReader(int readerId)
+{	
+	  int error;
+	  error=checkError(TMR_startReading(readers[readerId]), "restarting reader");
+	  return error;
 }
 
 int checkError(TMR_Status status, const char* msg)
@@ -289,7 +299,7 @@ int setPower(int readerID, int value)
 
 	hasError=checkError(TMR_stopReading(readers[readerID]), "Stopping Reader for power reading");
 	hasError=checkError(TMR_paramSet(readers[readerID], TMR_PARAM_RADIO_READPOWER, &value), "Setting Radio Power");
-        if (!hasError)
+    if (!hasError)
 	{
 	     hasError=checkError(TMR_startReading(readers[readerID]), "Starting reader");
 	}
@@ -297,12 +307,132 @@ int setPower(int readerID, int value)
 }
 
 
+uint8_t castValue(char ascii)
+{
+	uint8_t val;
+	if ((ascii<='9')&&(ascii>='0'))
+	{
+		val=ascii-'0';
+	} 
+	else if ((ascii<='F')&&(ascii>='A'))
+	{
+		val=ascii-'A'+10;
+	}
+	else if ((ascii<='f')&&(ascii>='a'))
+	{
+		val=ascii-'a'+10;
+	}
+	return val;
+}
+
 /**
- * Based on example code from API 1.27
- * TODO: test that actually works
- *
+ * Char based Version, needs reader to be stop and restarted
  * */
-int writeTag(int readerId, uint8_t newEpcData[])
+ int writeTag(int readerId, char epcData[], uint8_t epcBytes)
+{
+    int error;
+    TMR_TagData epc;
+    TMR_TagOp tagop;
+
+    uint8_t epcDataB[epcBytes];
+
+    int i;
+    printf("New tag id to write is: [");
+    for (i=0;i<epcBytes;i++)
+    {
+	printf("0x%c%c",epcData[2*i],epcData[2*i+1]);
+	if (i<epcBytes-1) printf(", ");
+    }
+    printf("]\n");
+
+    for (i=0;i<epcBytes;i++)
+    {
+	uint8_t highB=castValue(epcData[2*i]);	
+	uint8_t lowB=castValue(epcData[2*i+1]);
+	epcDataB[i]=(highB<<4)|lowB;
+     }
+
+     printf("binary value is: [");
+     for (i=0;i<epcBytes;i++)
+	{
+		printf("0x%02X",epcDataB[i]);
+		if (i<11) printf(", ");
+	}
+    printf("]\n");
+
+
+    
+    //epc.epcByteCount = sizeof(epcData) / sizeof(epcData[0]);
+    epc.epcByteCount = epcBytes;
+    memcpy(epc.epc, epcDataB, epc.epcByteCount * sizeof(uint8_t));
+
+    error=checkError(TMR_TagOp_init_GEN2_WriteTag(&tagop, &epc), "initializing GEN2_WriteTag");
+    error=checkError(TMR_executeTagOp(readers[readerId], &tagop, NULL, NULL), "executing GEN2_WriteTag");
+
+	if (!error)
+    {
+			printf("Success..........................................................\n");
+	} 
+	else
+	{
+		printf("CANNOT set tag to known value\n");		
+	}
+	
+
+    return error;
+  }
+
+
+
+/**
+ * Unchecked version, needs reader to be stop and restarted
+ * */
+ int writeTag2(int readerId, uint8_t epcData[], uint8_t epcBytes)
+{
+    int error;
+    TMR_TagData epc;
+    TMR_TagOp tagop;
+
+
+    int i;
+	printf("New tag id to write is: [");
+	for (i=0;i<12;i++)
+	{
+		printf("0x%02X",epcData[i]);
+		if (i<11) printf(", ");
+	}
+    printf("]\n");
+    
+    //epc.epcByteCount = sizeof(epcData) / sizeof(epcData[0]);
+    epc.epcByteCount = epcBytes;
+    memcpy(epc.epc, epcData, epc.epcByteCount * sizeof(uint8_t));
+
+    error=checkError(TMR_TagOp_init_GEN2_WriteTag(&tagop, &epc), "initializing GEN2_WriteTag");
+    error=checkError(TMR_executeTagOp(readers[readerId], &tagop, NULL, NULL), "executing GEN2_WriteTag");
+
+	if (!error)
+    {
+			printf("Success..........................................................\n");
+	} 
+	else
+	{
+		printf("CANNOT set tag to known value\n");		
+	}
+	
+
+    return error;
+  }
+
+
+ 
+ 
+ 
+ /*
+  * First version, based on api samples. Safer one
+  * 
+  * 
+  **/
+int writeTagOLD(int readerId, uint8_t newEpcData[], uint8_t epcBytes)
 {
     int error;
     uint8_t epcData[] = {
@@ -312,6 +442,9 @@ int writeTag(int readerId, uint8_t newEpcData[])
     TMR_TagData epc;
     TMR_TagOp tagop;
 
+	error=checkError(TMR_stopReading(readers[readerId]), "Stopping reader before tag writting");
+
+
 	/* Set the tag EPC to a known value*/
     epc.epcByteCount = sizeof(epcData) / sizeof(epcData[0]);
     memcpy(epc.epc, epcData, epc.epcByteCount * sizeof(uint8_t));
@@ -319,6 +452,23 @@ int writeTag(int readerId, uint8_t newEpcData[])
     error=checkError(TMR_TagOp_init_GEN2_WriteTag(&tagop, &epc), "initializing GEN2_WriteTag");
     error=checkError(TMR_executeTagOp(readers[readerId], &tagop, NULL, NULL), "executing GEN2_WriteTag");
 
+	if (!error)
+    {
+			printf("Tag has now a known value................................................................\n");
+	} else
+	{
+		printf("CANNOT set tag to known value\n");
+		return error;		
+	}
+	
+    int i;
+	printf("New tag id to write is: [");
+	for (i=0;i<12;i++)
+	{
+		printf("0x%02X",newEpcData[i]);
+		if (i<11) printf(", ");
+	}
+    printf("]\n");
 
     if (!error)
     {  /* Write Tag EPC with a select filter*/	  
@@ -326,8 +476,15 @@ int writeTag(int readerId, uint8_t newEpcData[])
 	  TMR_TagData newEpc;
 	  TMR_TagOp newtagop;
 
-	  newEpc.epcByteCount = sizeof(newEpcData) / sizeof(newEpcData[0]);
-          memcpy(newEpc.epc, newEpcData, newEpc.epcByteCount * sizeof(uint8_t));
+	  // This should work... but it does not
+	  //newEpc.epcByteCount = sizeof(newEpcData) / sizeof(newEpcData[0]);
+	  newEpc.epcByteCount = epcBytes;
+      memcpy(newEpc.epc, newEpcData, newEpc.epcByteCount * sizeof(uint8_t));
+	  
+	  printf("We are about to write %d bytes \n",newEpc.epcByteCount);
+	  printf("Size of newEpcData %lu\n",sizeof(newEpcData) );
+	  printf("Size of newEpcData[0] %lu\n", sizeof(newEpcData[0]));
+	  
 	  
 	  /* Initialize the new tagop to write the new epc*/	   
 	  error=checkError(TMR_TagOp_init_GEN2_WriteTag(&newtagop, &newEpc), "initializing GEN2_WriteTag");
@@ -337,6 +494,9 @@ int writeTag(int readerId, uint8_t newEpcData[])
 
 	  /* Execute the tag operation Gen2 writeTag with select filter applied*/
 	  error=checkError(TMR_executeTagOp(readers[readerId], &newtagop, &filter, NULL), "executing GEN2_WriteTag");
+	  
+	  error=checkError(TMR_startReading(readers[readerId]), "Starting reader");
+
 	}
 	return error;
   }

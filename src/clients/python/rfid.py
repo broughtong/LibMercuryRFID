@@ -96,3 +96,16 @@ def getPower(readerID):
 
         power = lib.getPower(readerID)
 
+        return power
+
+
+# newEPCdata is a string with hex char values of epc data
+# epcMemoryBytes is size in bytes of EPCData memory bank (at leas 12 bytes). 
+#                  It's half of the length of the string with values!!
+def writeTag(readerId, newEpcData,epcMemoryBytes):
+
+	global lib
+
+	error=lib.writeTag(readerId, newEpcData,epcMemoryBytes)
+        return error
+
