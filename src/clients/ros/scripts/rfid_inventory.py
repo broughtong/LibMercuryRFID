@@ -45,7 +45,7 @@ def rfidCallback(message):
 	tagSt.rssi      = int(fields[2])
 	tagSt.phase     = int(fields[3])
 	tagSt.frequency = int(fields[4])
-
+        
 	if tagID not in tag_dict:
 	    newTag = TagData()
 	    newTag.ID = tagID
