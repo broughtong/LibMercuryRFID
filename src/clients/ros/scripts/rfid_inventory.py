@@ -74,7 +74,7 @@ class RFID_Inventory():
 
         # "Constants" or variables you should really not change
         # power is in 100 dBm
-        POWER_STEP=500  # decreasing power after each inventory
+        POWER_STEP=100  # decreasing power after each inventory
         MIN_POWER=500   # minimum reading power
         MAX_POWER=3000  # maximum reading power
 
@@ -120,18 +120,20 @@ class RFID_Inventory():
 
             # get inventory: read tags for specified time
             inventory_msg.startTime = rospy.get_rostime() # closest to the real starting moment
-            m6e.reStartReader(reader)
+            #m6e.reStartReader(reader)
             self.getInventory()
-            m6e.stopReader(reader)
+            #m6e.stopReader(reader)
 
             # if inventory was successful, do a 'smaller' one
-            if (tag_dict.keys() > 0):
+            if (len(tag_dict)> 0):
                 inventory_msg.tagList = tag_dict.values()
                 # publish them
                 pub.publish(inventory_msg)
                 self.txpower = self.txpower-POWER_STEP
                 if (self.txpower<MIN_POWER):
                     self.txpower=MAX_POWER
+            else:
+                self.txpower=MAX_POWER
 
             # Sleep for a while after publishing new messages
             rospy.sleep(self.trest)
