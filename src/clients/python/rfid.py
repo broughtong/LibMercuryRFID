@@ -99,6 +99,18 @@ def getPower(readerID):
 
     return power
 
+# newEPCdata: string with new hex char values of epc data
+# OldEpcData: original value (same length)
+# epcMemoryBytes: byte size of EPCData memory bank (at least 12 bytes). 
+# NOTE   =>       It's half of the length of the string with values!!
+# Reader must be stopped and restarted before using it.
+def renameTag(readerId, OldEpcData, newEpcData, epcBytes):	 
+    global lib
+
+    error=lib.renameTag(readerId,OldEpcData, newEpcData,epcBytes)
+    return error
+	 
+	 
 
 # newEPCdata is a string with hex char values of epc data
 # epcMemoryBytes is size in bytes of EPCData memory bank (at leas 12 bytes). 

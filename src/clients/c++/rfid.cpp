@@ -7,24 +7,24 @@ extern "C"
 	int closeRFID();
 }
 
-void rfid::init()
+void init()
 {
 	//start comms etc
 }
 
-int rfid::startReader(const char* deviceURI, void* callbackFunction)
+int startReader(const char* deviceURI, void* callbackFunction)
 {
 	int readerID = startReader(deviceURI, callbackFunction);
 
 	return readerID;
 }
 
-void rfid::stopReader(int readerID)
+void stopReaderF(int readerID)
 {
-	stopReader(readerID);
+	int a = stopReader(readerID);
 }
 
-void rfid::close()
+void close()
 {
 	closeRFID();
 }

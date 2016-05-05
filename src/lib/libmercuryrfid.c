@@ -270,7 +270,8 @@ int checkError(TMR_Status status, const char* msg)
 		printf("%s: Ok\n", msg);
 		return 0;
 	}
-	printf("%s: Failed\n", msg);
+	printf("%s: Failed: %s\n", msg, TMR_strerror( status));
+	
 	return 1;
 }
 
@@ -382,6 +383,67 @@ uint8_t castValue(char ascii)
     return error;
   }
 
+
+
+/**
+ * Changes epc code from epcDataOLD to epcData from a tag.
+ * Reader must be stopped and restarted before using it.
+ * We assume both epcData epcDataOLD have same lenght
+ * */
+ int renameTag(int readerId, char epcDataOLD[], char epcData[], uint8_t epcBytes)
+{
+    int error;
+    TMR_TagData epc;
+    TMR_TagData epcOLD;
+
+    TMR_TagOp tagop;
+	TMR_TagFilter filter;
+	
+    uint8_t epcDataB[epcBytes];
+	uint8_t epcDataOLDB[epcBytes];
+	uint8_t highB;	
+	uint8_t lowB;
+	
+    int i;
+    
+    // cast char values to binary values
+    for (i=0;i<epcBytes;i++)
+    {
+	  highB=castValue(epcData[2*i]);	
+	  lowB=castValue(epcData[2*i+1]);
+	  epcDataB[i]=(highB<<4)|lowB;
+	  
+	  highB=castValue(epcDataOLD[2*i]);	
+	  lowB=castValue(epcDataOLD[2*i+1]);
+	  epcDataOLDB[i]=(highB<<4)|lowB;
+	  
+     }
+
+	// Initialize the filter with the original tag epc code
+	epcOLD.epcByteCount = epcBytes;
+    memcpy(epcOLD.epc, epcDataOLDB, epcOLD.epcByteCount * sizeof(uint8_t));  
+    error=checkError(TMR_TF_init_tag(&filter, &epcOLD), "initializing TMR_TagFilter");
+
+    // Initialize tag write operation  
+    epc.epcByteCount = epcBytes;
+    memcpy(epc.epc, epcDataB, epc.epcByteCount * sizeof(uint8_t));  
+    error=checkError(TMR_TagOp_init_GEN2_WriteTag(&tagop, &epc), "initializing GEN2_WriteTag");    
+    
+    // Execute tag writting with filter
+    error=checkError(TMR_executeTagOp(readers[readerId], &tagop, &filter, NULL), "executing GEN2_WriteTag");
+
+	if (!error)
+    {
+			printf("Success..........................................................\n");
+	} 
+	else
+	{
+		printf("CANNOT set tag to known value\n");		
+	}
+	
+
+    return error;
+  }
 
 
 /**
