@@ -21,7 +21,7 @@ from rfid_node.msg import TagStats
 def rfidCallback(message):
     global inventory_msg
     global tag_dict
-
+    global tag_pub
     inventory_msg.lastTagTime=rospy.get_rostime()
 
     fields = str(message).split(':')
@@ -53,6 +53,12 @@ def rfidCallback(message):
         tag_dict[tagID]=newTag
 
     tag_dict[tagID].stats.append(tagSt)
+    
+    lastTag=TagData()
+    lastTag.ID = tagID
+    lastTag.stats.append(tagSt)
+    
+    tag_pub.publish(lastTag)
         
     # print tag data
     if 0:
@@ -71,7 +77,7 @@ class RFID_Inventory():
         global inventory_msg
         global tag_dict
         global reader
-
+        global tag_pub
         # "Constants" or variables you should really not change
         # power is in 100 dBm
         POWER_STEP=100  # decreasing power after each inventory
@@ -93,16 +99,17 @@ class RFID_Inventory():
         rospy.loginfo('trest = %d', self.trest)       
         rospy.loginfo('topic = %s', self.topic)
 
+        # Create a publisher
+        pub = rospy.Publisher(self.topic, Inventory,queue_size=10)
+        tag_pub = rospy.Publisher("lastTag", TagData,queue_size=10)
+
         # Init reader
         m6e.init()
         reader = m6e.startReader("tmr:///dev/rfid", rfidCallback)
         m6e.setHopTime(reader, 40)
         m6e.getPower(reader)
         m6e.stopReader(reader)
-        # Create a publisher
-        pub = rospy.Publisher(self.topic, Inventory,queue_size=10)
-
-
+        
 
 
 
