@@ -11,3 +11,9 @@ build/
 /src/clients/ros/src/rfid/cfg/rfid_inventory_paramsConfig.py
 /src/clients/ros/src/rfid/__init__.py
 /src/clients/ros/scripts/.idea/*
+/.idea/encodings.xml
+/.idea/LibMercuryRFID.iml
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/vcs.xml
+/.idea/workspace.xml
