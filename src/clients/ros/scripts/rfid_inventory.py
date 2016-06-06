@@ -44,8 +44,9 @@ def rfidCallback(message):
     tagSt.timestamp.secs =  timest/1000
     tagSt.timestamp.nsecs =  (timest%1000)*1000000
     tagSt.rssi      = int(fields[2])
-    tagSt.phase     = int(fields[3])
-    tagSt.frequency = int(fields[4])
+    
+    tagSt.phase     = float(fields[3])*math.pi/180.0    
+    tagSt.frequency = int(fields[4])*1000
         
     if tagID not in tag_dict:
         newTag = TagData()
