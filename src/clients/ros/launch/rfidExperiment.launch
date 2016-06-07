@@ -1,39 +1,27 @@
 <?xml version="1.0" ?>
 <launch>
 	
-  <group ns="kompai_2dnav_sensors">
-    <remap from="base_scan_nav" to="/base_scan_nav"/>
-    <include file="$(find kompai_hbba_cfg)/launch/kompai_proc_slam_planner_sensors.launch"/>
-  </group>
+  <node pkg="ros_pure" type="ros_pure_bridge.py" name="ros_pure_bridge" output="screen"> />
+  </node>
 
-  <node pkg="topic_filters" type="generic_divider_node" name="kompai_2dnav_sensors_base_scan_filter" args="/base_scan kompai_2dnav_sensors/base_scan" />
 
-  <group ns="kompai_2dnav">
-    <remap from="move_base_simple/goal" to="/goto_pose"/>
-    <remap from="odom" to="/odom"/>
-    <remap from="map" to="/map"/>
-    <remap from="scan" to="/base_scan_nav"/>
-    <include file="$(find kompai_hbba_cfg)/launch/kompai_bhvr_2dnav.launch"/>
-    <node args="cmd_vel cmd_vel_out" name="cmd_vel_output_filter" pkg="topic_filters" type="generic_divider_node"/>
-    <param name="cmd_vel_out/abtr_priority" value="10"/>
-  </group>
-  
-  
-  <node pkg="rfid_node" type="rfid_inventory.py" name="tag_inventory_node">
+  <node pkg="tf" type="static_transform_publisher" name="laser2robot" args="0 0 0 0 0 0 /base_link /kompai_laser 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="odom2map" args="0 0 0 0 0 0 map odom_combined 100"/>
+    
+  <node pkg="rfid_node" type="rfid_inventory.py" name="tag_inventory_node" /> 
   
   <group ns="tag_resources_0">	  
-	<arg name="TrackedTag" value="390100010000000000000014" />		
-    <remap from="odom" to="/odom"/>
-    <remap from="map" to="/map"/>
-    <remap from="scan" to="/base_scan"/>
 	<node pkg="rfid_node" type="tag_sonar.py" name="tag_sonar_node" output="screen">
-	   <param name="tagNAME" value="(arg TrackedTag) " />
-	</node>
-	<node pkg="tf" type="static_transform_publisher" name="tag2robot" args="0 0 0 0 0 0  robot0 sonar_$(arg TrackedTag)  200" />
-    <!-- Run the costmap node -->
+        <rosparam param="tagNAME">"390000010000000000000007"</rosparam>	    
+        <remap from="/tag_resources_0/lastTag" to="/lastTag"/>
+    </node>   
+
+	<node pkg="tf" type="static_transform_publisher" name="tag2robot" args="0 0 0 0 0 0  base_link sonar_390000010000000000000007  100" />
+<!--   Run the costmap node -->
 	<node name="costmap_node" pkg="costmap_2d" type="costmap_2d_node" output="screen" >
 	  <rosparam file="$(find rfid_node)/launch/costmap_params.yaml" command="load" ns="costmap" />
 	</node> 
   </group>  
+
 
 </launch>

@@ -3,8 +3,8 @@
 publish_voxel_map: true
 
 #Set the global and robot frames for the costmap
-global_frame: world
-robot_base_frame: map_static
+global_frame: map
+robot_base_frame: odom_combined
 
 #Set the update and publish frequency of the costmap
 update_frequency: 5.0
@@ -53,8 +53,13 @@ lethal_cost_threshold: 100
 
 plugins:
   - {name: sonar_layer,   type: "range_sensor_layer::RangeSensorLayer"}
+#  - {name: obstacle_layer, type: "costmap_2d::VoxelLayer"}
 
-# observation_sources should match with laser topic
 sonar_layer:
     topics: ["/sonarRFID"]
     no_readings_timeout: 1.0
+
+# observation_sources should match with laser topic
+#obstacle_layer:
+#    observation_sources: base_scan 
+#    base_scan: {data_type: LaserScan, sensor_frame: /kompai_laser, topic: /base_scan }

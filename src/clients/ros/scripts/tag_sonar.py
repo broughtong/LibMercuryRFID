@@ -9,8 +9,10 @@ from rfid_node.msg import TagData
 import math
 import tf
 import numpy as np
+import sklearn 
 from sklearn import linear_model
 from threading import Lock
+from distutils.version import StrictVersion
 
 from datetime import datetime
 import sys
@@ -97,8 +99,6 @@ def solvePhaseAmbiguity(X,y):
     ySel = yUnique[indexes]
 
     #5.-usinge these points, calculate extra phase vector
-    if ySel.size==0:
-        print("WTF!")
     prevY = ySel[0]
     extraPhase = 0
     phaseVector = np.zeros(ySel.size)
@@ -134,27 +134,37 @@ class TagLocatorNode():
         :return: estimated radius
         '''
         R=-1
-        if self.rssiVector.size > self.minNumReadings:
-            numHip = min(self.numHipot, self.rssiVector.size)
-            #sort both of them usind df as reference
+    
+        numHip = min(self.numHipot, self.rssiVector.size)
+        #sort both of them usind df as reference
 
-            orderIndexs=np.argsort(self.freqVector)
-            self.freqVector = self.freqVector[orderIndexs]
-            self.phaseVector = self.phaseVector[orderIndexs]
+        orderIndexs=np.argsort(self.freqVector)
+        self.freqVector = self.freqVector[orderIndexs]
+        self.phaseVector = self.phaseVector[orderIndexs]
 
-            # create a  set of frequency and phase differences
-            df = buildDiffVector(self.freqVector, numHip)
-            dp = buildDiffVector(self.phaseVector, numHip)
+        # create a  set of frequency and phase differences
+        df = buildDiffVector(self.freqVector, numHip)
+        dp = buildDiffVector(self.phaseVector, numHip)
+        dpUnwrapped=solvePhaseAmbiguity(df,dp)
 
-            dfUnwrapped=solvePhaseAmbiguity(df,dp)
+        df = df.reshape(-1, 1)
+        dpUnwrapped = dpUnwrapped.reshape(-1, 1)
 
-            df = df.reshape(-1, 1)
-            dfUnwrapped = dfUnwrapped.reshape(-1, 1)
-
-            # feed into RANSAC Regressor...
-            mr = linear_model.RANSACRegressor(linear_model.LinearRegression())
-            mr.fit(df, dfUnwrapped)
-            R = -mr.estimator_.coef_ * self.C / (4.0 * math.pi)
+        # feed into RANSAC Regressor...
+        mr = sklearn.linear_model.RANSACRegressor(sklearn.linear_model.LinearRegression())
+        mr.fit(df, dpUnwrapped)
+        R = -mr.estimator_.coef_ * self.C / (4.0 * math.pi)
+        
+        
+        if 0:
+            rospy.logerr("Using %d points",self.rssiVector.size)
+            rospy.logerr("self.freqVector: %s",np.array_str(self.freqVector))
+            rospy.logerr("self.phaseVector: %s",np.array_str(self.phaseVector))
+            rospy.logerr("df: %s",np.array_str(df))
+            rospy.logerr("dpUnwrapped: %s",np.array_str(dpUnwrapped))
+            rospy.logerr("mr.estimator_.coef_ : %s",mr.estimator_.coef_ )
+            rospy.logerr("R: %s",R )
+            rospy.logerr("Deleting after ransac")
 
         return R
 
@@ -173,7 +183,7 @@ class TagLocatorNode():
             finally:
                 self.dataLock.release()
 
-            print(">>>>>>>>>>>>>>>>>>>>>>>>>  New pose")
+           # print(">>>>>>>>>>>>>>>>>>>>>>>>>  New pose")
 
         self.prevPose=newPose
 
@@ -187,22 +197,19 @@ class TagLocatorNode():
 
         if (data.ID.upper() == self.tagNAME.upper()):
             # some versions of RFID library return values in degs and KHz
-            if data.stats[0].frequency<10e8:
-                print("...newTag:", data.ID, data.stats[0].rssi, data.stats[0].phase*math.pi/180.0, data.stats[0].frequency*1000.0)
-            else:
-                print("...newTag:", data.ID, data.stats[0].rssi, data.stats[0].phase, data.stats[0].frequency)
+            if 0:
+                if data.stats[0].frequency<10e8:             
+                    print("...newTag:", data.ID, data.stats[0].rssi, data.stats[0].phase*math.pi/180.0, data.stats[0].frequency*1000.0)
+                else:
+                    print("...newTag:", data.ID, data.stats[0].rssi, data.stats[0].phase, data.stats[0].frequency)
 				
             if (not self.isNewPose):
                 id = data.ID
                 rssi = float(data.stats[0].rssi)
                 
                 # some versions of RFID library return values in degs and KHz
-                if data.stats[0].frequency<10e8:
-                    phase = float(data.stats[0].phase)*math.pi/180.0
-                    freq = float(data.stats[0].frequency)*1000.0
-                else:
-                    phase = float(data.stats[0].phase)
-                    freq = float(data.stats[0].frequency)
+                phase = float(data.stats[0].phase)*math.pi/180.0
+                freq = float(data.stats[0].frequency)*1000.0
                 
                 #add new entry to vectors
                 self.dataLock.acquire()
@@ -210,16 +217,14 @@ class TagLocatorNode():
                     self.rssiVector = np.append(self.rssiVector, rssi)
                     self.phaseVector = np.append(self.phaseVector, phase)
                     self.freqVector = np.append(self.freqVector, freq)
-
-                    if self.mode == 1:
-                        self.multiplePub(phase,freq)
+                    
                 finally:
                     self.dataLock.release()
 
             else:
                 # clear tag info and reset flag
                 self.dataLock.acquire()
-                try:
+                try:                    
                     self.rssiVector = np.array([])
                     self.phaseVector = np.array([])
                     self.freqVector = np.array([])
@@ -227,15 +232,65 @@ class TagLocatorNode():
                 finally:
                     self.dataLock.release()
 
-    def multiplePub(self,phase, freq):
+    def singlePub(self):
+        self.dataLock.acquire()
+        try:
+            if self.rssiVector.size > self.minNumReadings:                   
+                R = self.ransacEstimation()  
+                #delete used values
+                self.rssiVector = np.array([])
+                self.phaseVector = np.array([])
+                self.freqVector = np.array([])                
+                self.rangeMsg.header.stamp = rospy.Time.now()
+                self.rangeMsg.range = R
+                # publish as a sonar value
+                self.rangePub.publish( self.rangeMsg)
 
-        R =np.arange(self.C*phase/(4*math.pi*freq),self.MAX_DIST,step=self.C/(2*freq))
+        finally:
+            self.dataLock.release()
 
-        for ri in R:
-            self.rangeMsg.header.stamp = rospy.Time.now()
-            self.rangeMsg.range = ri
-            # publish as a sonar value
-            self.rangePub.publish(self.rangeMsg)
+    
+    def multiplePub(self):
+         self.dataLock.acquire()
+         try:            
+            rssi=self.rssiVector
+            phase=self.phaseVector
+            freq=self.freqVector    
+                # delete used data
+            if freq.size > self.minNumReadings:
+                rospy.logerr("Deleting after simple est")
+                self.rssiVector = np.array([])
+                self.phaseVector = np.array([])
+                self.freqVector = np.array([])
+                  
+         finally:
+            self.dataLock.release()
+         
+         if freq.size > self.minNumReadings:
+             #sort by freq
+             orderIndexs=np.argsort(freq)
+             phase = phase[orderIndexs]
+             freq = freq[orderIndexs]
+             
+             #get average phase for each frequency... 
+             freqUnique = np.unique(freq)   
+             phaseAV = np.zeros(freqUnique.size)   
+                
+             for i in range(0, freqUnique.size):
+                phaseAV[i] = np.mean(phase[freq == freqUnique[i]])
+                
+             R0=self.C*phaseAV/(4*math.pi*freqUnique)
+             Rinc=self.C/(2*freqUnique) 
+
+             R=[]
+             for r0i,rinc in np.nditer([R0,Rinc]):
+                Ri = np.arange(r0i,self.MAX_DIST,step=rinc)
+                R  = np.concatenate((R, Ri), axis=1)
+             #rospy.logerr("About to average %d readings", R.size)
+             self.rangeMsg.header.stamp = rospy.Time.now()
+             self.rangeMsg.range = np.mean(R)
+             # publish as a sonar value
+             self.rangePub.publish(self.rangeMsg)
 
     # Must have __init__(self) function for a class, similar to a C++ class constructor.
     def __init__(self):
@@ -247,8 +302,12 @@ class TagLocatorNode():
         self.MAX_DIST = 15.0  # ... to honor the Hebrew God, whose Ark this is."
         self.numCicles= math.ceil(15 / (self.C / (2 * self.FREQ_MAX)))
 
-        self.minNumReadings = 50 # minimun number of readings before trying ransac
-        self.mode=1 # 0 use ransac, 1 simple phase estimation
+        self.minNumReadings = 50 # minimun number of readings before publishing
+        self.mode='diff' # 'diff' == use ransac and phase differences, 'mult' == multiple solutions based on phases
+
+        if StrictVersion(sklearn.__version__)<=StrictVersion('0.16'):
+            rospy.logerr("RANSAC is not on your python scikit package. You need version >=0.17. See http://scikit-learn.org/stable/install.html")
+
 
         # Get the ~private namespace parameters from command line or launch file.
         self.tsample = float(rospy.get_param('~tsample', '0.01'))
@@ -298,29 +357,21 @@ class TagLocatorNode():
 
         self.rangeMsg = Range()
         self.rangeMsg.radiation_type=Range.INFRARED
-        self.rangeMsg.min_range= self.C/(2.0*self.FREQ_MIN)
+        self.rangeMsg.min_range= 0#self.C/(2.0*self.FREQ_MIN)
         self.rangeMsg.max_range = self.MAX_DIST
-        self.rangeMsg.field_of_view = math.pi/2
+        self.rangeMsg.field_of_view = math.pi
         self.rangeMsg.header.frame_id = "sonar_"+self.tagNAME
 
         while not rospy.is_shutdown():
-            if self.mode==0:
-                if not self.isNewPose:
+            if not self.isNewPose:  
+                if self.mode=='diff':
                     self.singlePub()
+                elif self.mode=='mult':
+                    self.multiplePub()
+                    
                 # Sleep for a while after publishing new messages
             r.sleep()
 
-    def singlePub(self):
-        self.dataLock.acquire()
-        try:
-            R = self.ransacEstimation()
-        finally:
-            self.dataLock.release()
-
-        self.rangeMsg.header.stamp = rospy.Time.now()
-        self.rangeMsg.range = R
-        # publish as a sonar value
-        self.rangePub.publish( self.rangeMsg)
 
 
 

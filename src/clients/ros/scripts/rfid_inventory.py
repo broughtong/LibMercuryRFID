@@ -11,6 +11,7 @@ import rospy
 import rospy.rostime
 import sys
 import time
+import math
 import rfid as m6e
 
 # Import custom message data 
@@ -45,8 +46,8 @@ def rfidCallback(message):
     tagSt.timestamp.nsecs =  (timest%1000)*1000000
     tagSt.rssi      = int(fields[2])
     
-    tagSt.phase     = float(fields[3])*math.pi/180.0    
-    tagSt.frequency = int(fields[4])*1000
+    tagSt.phase     = float(fields[3])
+    tagSt.frequency = int(fields[4])
         
     if tagID not in tag_dict:
         newTag = TagData()
