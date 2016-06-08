@@ -72,9 +72,9 @@ def buildDiffVector(vector,diffSize):
             break
     return diffV[:diffSize]
 
-def solvePhaseAmbiguity(X,y):
-    X = X.reshape(-1, 1)
-    y = y.reshape(-1, 1)
+def solvePhaseAmbiguity(X0,y0):
+    X = X0.reshape(-1, 1)
+    y = y0.reshape(-1, 1)
 
     # 1.- calculate average y at each X value
     xUnique = np.unique(X)
@@ -93,10 +93,14 @@ def solvePhaseAmbiguity(X,y):
     yd = np.array([1])
     yd = np.append(yd, np.sign(yUnique[1:] - yUnique[:-1]))
     indexes = (yd == -1)
-
+    
     #4.-select relevant points to infer new phase addition
     xSel = xUnique[indexes]
     ySel = yUnique[indexes]
+    
+    #this means I couldn't find any desdendent trend 
+    if ySel.size==0:
+        return y0
 
     #5.-usinge these points, calculate extra phase vector
     prevY = ySel[0]
@@ -127,7 +131,6 @@ def solvePhaseAmbiguity(X,y):
 
 # Node  class.
 class TagLocatorNode():
-
     def ransacEstimation(self):
         '''
         Using tag stored readings, calls ransac to estimate radius
@@ -170,21 +173,23 @@ class TagLocatorNode():
 
     def odomCallback(self,data):
         '''
-        Each time robot moves, we need to clean tag data.
+        Each time robot moves, we publish to clean tag data.
         Raises internal flag to request it
         :param data:
         :return:
         '''
         newPose=data.pose.pose
-        if (distance(newPose,self.prevPose)>self.distThresh) or (yawBetweenPoses(newPose,self.prevPose)>self.angThresh) :
+        self.distInc=distance(newPose,self.prevPose)
+        if (self.distInc>self.distThresh) or (yawBetweenPoses(newPose,self.prevPose)>self.angThresh) :
+            self.singlePub()
             self.dataLock.acquire()
             try:
-                self.isNewPose = True
+                #delete values, either we have used them or are too few
+                self.rssiVector = np.array([])
+                self.phaseVector = np.array([])
+                self.freqVector = np.array([])  
             finally:
                 self.dataLock.release()
-
-           # print(">>>>>>>>>>>>>>>>>>>>>>>>>  New pose")
-
         self.prevPose=newPose
 
     def tagCallback(self,data):
@@ -194,7 +199,7 @@ class TagLocatorNode():
         :param data:
         :return:
         '''
-
+        #print("...newTag:", data.ID, data.stats[0].rssi, data.stats[0].phase, data.stats[0].frequency)
         if (data.ID.upper() == self.tagNAME.upper()):
             # some versions of RFID library return values in degs and KHz
             if 0:
@@ -202,54 +207,76 @@ class TagLocatorNode():
                     print("...newTag:", data.ID, data.stats[0].rssi, data.stats[0].phase*math.pi/180.0, data.stats[0].frequency*1000.0)
                 else:
                     print("...newTag:", data.ID, data.stats[0].rssi, data.stats[0].phase, data.stats[0].frequency)
-				
-            if (not self.isNewPose):
-                id = data.ID
-                rssi = float(data.stats[0].rssi)
-                
-                # some versions of RFID library return values in degs and KHz
-                phase = float(data.stats[0].phase)*math.pi/180.0
-                freq = float(data.stats[0].frequency)*1000.0
-                
-                #add new entry to vectors
-                self.dataLock.acquire()
-                try:
-                    self.rssiVector = np.append(self.rssiVector, rssi)
-                    self.phaseVector = np.append(self.phaseVector, phase)
-                    self.freqVector = np.append(self.freqVector, freq)
-                    
-                finally:
-                    self.dataLock.release()
-
-            else:
-                # clear tag info and reset flag
-                self.dataLock.acquire()
-                try:                    
-                    self.rssiVector = np.array([])
-                    self.phaseVector = np.array([])
-                    self.freqVector = np.array([])
-                    self.isNewPose = False
-                finally:
-                    self.dataLock.release()
+				            
+            id = data.ID
+            rssi = float(data.stats[0].rssi)
+            
+            #  RFID library return values in degs and KHz
+            phase = float(data.stats[0].phase)*math.pi/180.0
+            freq = float(data.stats[0].frequency)*1000.0
+            
+            #add new entry to vectors
+            self.dataLock.acquire()
+            try:
+                self.rssiVector = np.append(self.rssiVector, rssi)
+                self.phaseVector = np.append(self.phaseVector, phase)
+                self.freqVector = np.append(self.freqVector, freq)                
+            finally:
+                self.dataLock.release()
 
     def singlePub(self):
         self.dataLock.acquire()
         try:
+            #update our estimation only if its good enough
             if self.rssiVector.size > self.minNumReadings:                   
-                R = self.ransacEstimation()  
-                #delete used values
+                R = self.ransacEstimation() 
+                self.R=R                                
+                #delete values, 
                 self.rssiVector = np.array([])
                 self.phaseVector = np.array([])
                 self.freqVector = np.array([])                
-                self.rangeMsg.header.stamp = rospy.Time.now()
-                self.rangeMsg.range = R
-                # publish as a sonar value
-                self.rangePub.publish( self.rangeMsg)
+            #publishing, maybe just a republish of an old value...
+            self.rangeMsg.header.stamp = rospy.Time.now()
+            self.rangeMsg.range = self.R
+            # publish as a sonar value
+            self.rangePub.publish( self.rangeMsg)
 
         finally:
             self.dataLock.release()
-
     
+    def singlePubA(self):
+        self.dataLock.acquire()
+        try:
+            if self.rssiVector.size > self.minNumReadings:                   
+                R = self.ransacEstimation() 
+                #todo RANSAC estimation needs to be filtered.
+                #this is just a Q&D patch
+                R = R - 3.892 # take out fixed offset (from other experimeints
+                if R>0:               
+                    #rospy.logerr("R was %1.2f",self.R)
+                    #rospy.logerr("new R is %1.2f",R)
+                    #rospy.logerr("abs diff is %1.2f",math.fabs(R-self.R) )
+                    #rospy.logerr("odom inc is %1.2f",self.distInc)                    
+                    
+                    # if new Radius estimation is very different to our motion rate, its worthless
+                    goodUpdate=(math.fabs(R-self.R)<2*self.distInc) or (R<self.R)
+                    newUpdate=self.R==-1
+                    if goodUpdate or newUpdate:
+                        #rospy.logerr("--------------> updating" )
+                        self.R=R                
+                        #delete used values
+                        self.rssiVector = np.array([])
+                        self.phaseVector = np.array([])
+                        self.freqVector = np.array([])                
+            #publishing, maybe just a republish of an old value...
+            self.rangeMsg.header.stamp = rospy.Time.now()
+            self.rangeMsg.range = self.R
+            # publish as a sonar value
+            self.rangePub.publish( self.rangeMsg)
+
+        finally:
+            self.dataLock.release()
+           
     def multiplePub(self):
          self.dataLock.acquire()
          try:            
@@ -257,8 +284,7 @@ class TagLocatorNode():
             phase=self.phaseVector
             freq=self.freqVector    
                 # delete used data
-            if freq.size > self.minNumReadings:
-                rospy.logerr("Deleting after simple est")
+            if freq.size > self.minNumReadings:                
                 self.rssiVector = np.array([])
                 self.phaseVector = np.array([])
                 self.freqVector = np.array([])
@@ -299,10 +325,10 @@ class TagLocatorNode():
         self.FREQ_STEP= 500000.0  # Hz
         self.FREQ_MIN = 860000000.0 # Hz
         self.FREQ_MAX = 868000000.0 # Hz
-        self.MAX_DIST = 15.0  # ... to honor the Hebrew God, whose Ark this is."
+        self.MAX_DIST = 10.0  # ... to honor the Hebrew God, whose Ark this is."
         self.numCicles= math.ceil(15 / (self.C / (2 * self.FREQ_MAX)))
 
-        self.minNumReadings = 50 # minimun number of readings before publishing
+        self.minNumReadings = 100 # minimun number of readings before publishing
         self.mode='diff' # 'diff' == use ransac and phase differences, 'mult' == multiple solutions based on phases
 
         if StrictVersion(sklearn.__version__)<=StrictVersion('0.16'):
@@ -332,6 +358,9 @@ class TagLocatorNode():
         self.prevPose.orientation.z = quaternion[2]
         self.prevPose.orientation.w = quaternion[3]
 
+        #init prev. detection
+        self.R =-1
+        self.distInc=0
         # init read/write locks
         self.dataLock = Lock()
 
@@ -341,7 +370,6 @@ class TagLocatorNode():
             self.rssiVector = np.array([])
             self.phaseVector = np.array([])
             self.freqVector = np.array([])
-            self.isNewPose = False
         finally:
             self.dataLock.release()
 
@@ -359,18 +387,17 @@ class TagLocatorNode():
         self.rangeMsg.radiation_type=Range.INFRARED
         self.rangeMsg.min_range= 0#self.C/(2.0*self.FREQ_MIN)
         self.rangeMsg.max_range = self.MAX_DIST
-        self.rangeMsg.field_of_view = math.pi
+        self.rangeMsg.field_of_view = 2*math.pi
         self.rangeMsg.header.frame_id = "sonar_"+self.tagNAME
 
         while not rospy.is_shutdown():
-            if not self.isNewPose:  
                 if self.mode=='diff':
                     self.singlePub()
                 elif self.mode=='mult':
                     self.multiplePub()
                     
                 # Sleep for a while after publishing new messages
-            r.sleep()
+                r.sleep()
 
 
 

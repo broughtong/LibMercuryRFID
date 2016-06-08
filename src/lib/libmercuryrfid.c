@@ -307,6 +307,27 @@ int setPower(int readerID, int value)
 	return hasError;
 }
 
+ 
+int setRegionEU(int readerID)
+{    
+    TMR_Region region;    
+   	int hasError;
+    region=TMR_REGION_EU3; //see tmr_params.h for other regions. Not all are supported.
+    
+    hasError=checkError(TMR_stopReading(readers[readerID]), "Stopping Reader for EU region configuration");      
+    if (!hasError)
+	{
+        hasError=checkError(TMR_paramSet(readers[readerID], TMR_PARAM_REGION_ID, &region), "Setting EU region");
+    }
+    
+    if (!hasError)
+	{
+	     hasError=checkError(TMR_startReading(readers[readerID]), "Starting reader");
+	}
+    
+	return hasError;
+}
+
 
 uint8_t castValue(char ascii)
 {

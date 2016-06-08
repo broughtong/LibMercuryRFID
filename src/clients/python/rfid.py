@@ -80,6 +80,13 @@ def setPower(readerID, value):
 
     lib.setPower(readerID, value)
 
+# configures reader to EU region!!!!
+def setRegionEU(readerID):
+
+    global lib
+
+    lib.setRegionEU(readerID)
+
 
 def close():
 
