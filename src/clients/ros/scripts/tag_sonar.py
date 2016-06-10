@@ -157,8 +157,7 @@ class TagLocatorNode():
         mr = sklearn.linear_model.RANSACRegressor(sklearn.linear_model.LinearRegression())
         mr.fit(df, dpUnwrapped)
         R = -mr.estimator_.coef_ * self.C / (4.0 * math.pi)
-        
-        
+
         if 0:
             rospy.logerr("Using %d points",self.rssiVector.size)
             rospy.logerr("self.freqVector: %s",np.array_str(self.freqVector))
@@ -230,7 +229,15 @@ class TagLocatorNode():
             #update our estimation only if its good enough
             if self.rssiVector.size > self.minNumReadings:                   
                 R = self.ransacEstimation() 
-                self.R=R                                
+                self.R=R
+                # check for possible misconfigurations....
+                if self.freqVector[0] > self.FREQ_MAX:
+                    self.FREQ_MIN = self.FREQ_MIN_USA  # Hz
+                    self.FREQ_MAX = self.FREQ_MAX_USA  # Hz
+                    self.MAX_DIST = self.C / (
+                    2 * (self.FREQ_MAX - self.FREQ_MIN))  # keep only first solution of phase diff equation
+                    self.MIN_DIST = self.C / (2 * self.FREQ_MAX)  # ambiguity of phase equation
+
                 #delete values, 
                 self.rssiVector = np.array([])
                 self.phaseVector = np.array([])
@@ -323,10 +330,17 @@ class TagLocatorNode():
         # "Constants" or variables you should not change
         self.C=299792458.0  #m/s
         self.FREQ_STEP= 500000.0  # Hz
-        self.FREQ_MIN = 860000000.0 # Hz
-        self.FREQ_MAX = 868000000.0 # Hz
-        self.MAX_DIST = 10.0  # ... to honor the Hebrew God, whose Ark this is."
-        self.numCicles= math.ceil(15 / (self.C / (2 * self.FREQ_MAX)))
+        self.FREQ_MIN_EU = 860000000.0 # Hz
+        self.FREQ_MAX_EU = 868000000.0 # Hz
+        self.FREQ_MIN_USA = 902000000.0 # Hz
+        self.FREQ_MAX_USA = 928000000.0 # Hz
+
+        self.FREQ_MIN = self.FREQ_MIN_EU  # Hz
+        self.FREQ_MAX = self.FREQ_MAX_EU  # Hz
+
+        self.MAX_DIST = self.C / (2 * (self.FREQ_MAX-self.FREQ_MIN)) # keep only first solution of phase diff equation
+        self.MIN_DIST = self.C / (2 * self.FREQ_MAX )  # ambiguity of phase equation
+        #self.numCicles= math.ceil(15 / (self.C / (2 * self.FREQ_MAX)))
 
         self.minNumReadings = 100 # minimun number of readings before publishing
         self.mode='diff' # 'diff' == use ransac and phase differences, 'mult' == multiple solutions based on phases
@@ -385,7 +399,7 @@ class TagLocatorNode():
 
         self.rangeMsg = Range()
         self.rangeMsg.radiation_type=Range.INFRARED
-        self.rangeMsg.min_range= 0#self.C/(2.0*self.FREQ_MIN)
+        self.rangeMsg.min_range= self.MIN_DIST
         self.rangeMsg.max_range = self.MAX_DIST
         self.rangeMsg.field_of_view = 2*math.pi
         self.rangeMsg.header.frame_id = "sonar_"+self.tagNAME
