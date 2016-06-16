@@ -2,7 +2,7 @@
 
 <!--
 
-Binary sonar emulation
+range sonar emulation
 
 -->
 
@@ -17,11 +17,11 @@ Binary sonar emulation
   <node pkg="tf" type="static_transform_publisher" name="odom2map" args="0 0 0 0 0 0 map odom_combined 100"/>
     
   <node pkg="rfid_node" type="rfid_detect_eu.py" name="tag_detect_node" output="screen">
-        <rosparam param="txpower">2000</rosparam>	            
+        <rosparam param="txpower">2100</rosparam>	            
     </node>   
   
   <group ns="tag_resources_0">	  
-	<node pkg="rfid_node" type="binary_tag_sonar.py" name="tag_sonar_node" output="screen">
+	<node pkg="rfid_node" type="tag_sonar.py" name="tag_sonar_node" output="screen">
         <rosparam param="tagNAME">"390000010000000000000007"</rosparam>	    
         <rosparam param="tsample">1</rosparam>	    
         <remap from="/tag_resources_0/lastTag" to="/lastTag"/>
@@ -30,7 +30,7 @@ Binary sonar emulation
 	<node pkg="tf" type="static_transform_publisher" name="tag2robot" args="0 0 0 0 0 0  base_link sonar_390000010000000000000007  100" />
 <!--   Run the costmap node -->
 	<node name="costmap_node" pkg="costmap_2d" type="costmap_2d_node" output="screen" >
-	  <rosparam file="$(find rfid_node)/launch/costmap_params_binary.yaml" command="load" ns="costmap" />
+	  <rosparam file="$(find rfid_node)/launch/costmap_params.yaml" command="load" ns="costmap" />
 	</node> 
   </group>  
 

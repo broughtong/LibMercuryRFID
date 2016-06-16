@@ -83,6 +83,8 @@ def rfidCallback(message):
     
     # print tag data
     if False:
+      rospy.loginfo('%s,%s,%s,%s,%d', tagID,fields[2], fields[3], fields[4], timest)
+    if False:
       rospy.loginfo('Detected tag id: %s', tagID)
       rospy.loginfo('RSSi = %s', fields[2])
       rospy.loginfo('phase = %s', fields[3])
@@ -95,12 +97,15 @@ if __name__ == "__main__":
     global tag_pub
     rospy.init_node("rfid_detect")
     tag_pub = rospy.Publisher("lastTag", TagData,queue_size=10)
+    txpower = int(rospy.get_param('~txpower', '3000'))
+    
     rfid.init()
     reader = rfid.startReader("tmr:///dev/rfid", rfidCallback)
         
     rfid.setHopTime(reader, 40) 
     rfid.setRegionEU(reader)
-
+    rfid.setPower(reader, txpower)
+    rfid.getPower(reader)
     rospy.spin()
 
     rfid.stopReader(reader)

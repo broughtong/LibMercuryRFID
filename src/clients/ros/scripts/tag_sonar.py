@@ -229,13 +229,13 @@ class TagLocatorNode():
             #update our estimation only if its good enough
             if self.rssiVector.size > self.minNumReadings:                   
                 R = self.ransacEstimation() 
-                self.R=R
+                self.R=(R-self.cableLength)/4.0
+                
                 # check for possible misconfigurations....
                 if self.freqVector[0] > self.FREQ_MAX:
                     self.FREQ_MIN = self.FREQ_MIN_USA  # Hz
                     self.FREQ_MAX = self.FREQ_MAX_USA  # Hz
-                    self.MAX_DIST = self.C / (
-                    2 * (self.FREQ_MAX - self.FREQ_MIN))  # keep only first solution of phase diff equation
+                    self.MAX_DIST = self.C / (2 * (self.FREQ_MAX - self.FREQ_MIN))  # keep only first solution of phase diff equation
                     self.MIN_DIST = self.C / (2 * self.FREQ_MAX)  # ambiguity of phase equation
 
                 #delete values, 
@@ -334,7 +334,9 @@ class TagLocatorNode():
         self.FREQ_MAX_EU = 868000000.0 # Hz
         self.FREQ_MIN_USA = 902000000.0 # Hz
         self.FREQ_MAX_USA = 928000000.0 # Hz
-
+        self.cableLength = 2.0 # meters
+        
+        #constants derivated from first ones...
         self.FREQ_MIN = self.FREQ_MIN_EU  # Hz
         self.FREQ_MAX = self.FREQ_MAX_EU  # Hz
 
@@ -401,7 +403,7 @@ class TagLocatorNode():
         self.rangeMsg.radiation_type=Range.INFRARED
         self.rangeMsg.min_range= self.MIN_DIST
         self.rangeMsg.max_range = self.MAX_DIST
-        self.rangeMsg.field_of_view = 2*math.pi
+        self.rangeMsg.field_of_view = 1.5*math.pi
         self.rangeMsg.header.frame_id = "sonar_"+self.tagNAME
 
         while not rospy.is_shutdown():

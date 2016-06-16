@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+<launch>
+	
+  <node pkg="ros_pure" type="ros_pure_bridge.py" name="ros_pure_bridge" output="screen"> />
+  </node>
+
+
+  <node pkg="tf" type="static_transform_publisher" name="laser2robot" args="0 0 0 0 0 0 /base_link /kompai_laser 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="odom2map" args="0 0 0 0 0 0 map odom_combined 100"/>
+    
+  <node pkg="rfid_node" type="rfid_detect_eu.py" name="tag_detect_node" /> 
+  
+  <group ns="tag_resources_0">	  
+	<node pkg="rfid_node" type="tag_sonar.py" name="tag_sonar_node" output="screen">
+        <rosparam param="tagNAME">"300833B2DDD9014000000012"</rosparam>	    
+        <remap from="/tag_resources_0/lastTag" to="/lastTag"/>
+    </node>   
+  </group>
+
+
+</launch>

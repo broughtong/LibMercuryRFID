@@ -74,7 +74,7 @@ sonar_layer:
     #Whether to clear the sensor readings on max. range 
     clear_on_max_reading: false
     
-    input_sensor_type: "VARIABLE"
+    input_sensor_type: "FIXED"
 
 # observation_sources should match with laser topic
 #obstacle_layer:

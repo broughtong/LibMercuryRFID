@@ -52,31 +52,9 @@ lethal_cost_threshold: 100
 #Configuration for the sensors that the costmap will use to update a map
 
 plugins:
-  - {name: sonar_layer,   type: "range_sensor_layer::RangeSensorLayer"}
-#  - {name: obstacle_layer, type: "costmap_2d::VoxelLayer"}
-
-sonar_layer:
-    #Namespace that is prepended to all topic names 
-    ns: ""
-
-    #List of Range topics to subscribe to 
-    topics: ["/sonarRFID"]
-
-    #layer will warn the user and the layer will be marked as not current after this time. 0 disables it. 
-    no_readings_timeout: 0.0
-    
-    #Cells with a probability lower than the clear_threshold are marked as free space in the master costmap. 
-    clear_threshold: .2
-    
-    #Cells with a probability higher than the mark_threshold are marked as lethal obstacles in the master costmap. 
-    mark_threshold: .5
-    
-    #Whether to clear the sensor readings on max. range 
-    clear_on_max_reading: false
-    
-    input_sensor_type: "VARIABLE"
+  - {name: obstacle_layer, type: "costmap_2d::VoxelLayer"}
 
 # observation_sources should match with laser topic
-#obstacle_layer:
-#    observation_sources: base_scan 
-#    base_scan: {data_type: LaserScan, sensor_frame: /kompai_laser, topic: /base_scan }
+obstacle_layer:
+    observation_sources: base_scan 
+    base_scan: {data_type: LaserScan, sensor_frame: /kompai_laser, topic: /base_scan }
