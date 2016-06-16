@@ -48,6 +48,7 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
    TagData.msg
    TagStats.msg
+   TagReading.msg
    Inventory.msg
  )
 
