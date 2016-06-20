@@ -4,8 +4,7 @@ import rospy
 import std_msgs
 import rfid
 
-from rfid_node.msg import TagData
-from rfid_node.msg import TagStats
+from rfid_node.msg import TagReading
 
 def isValidData(data):
     if len(data)<7:
