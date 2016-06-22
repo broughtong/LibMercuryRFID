@@ -41,7 +41,7 @@ def isValidData(data):
                 
     return True       
 
-def rfidCallback(self,message):
+def rfidCallback(message):
     global tag_pub
     global txpower
     global frame_id
@@ -95,21 +95,22 @@ if __name__ == "__main__":
     rospy.init_node("rfid_reader_ros_node")
     
     # Get the ~private namespace parameters from command line or launch file.
-    txpower = int(rospy.get_param('~txpower', '3000'))
+    txpower = int(rospy.get_param('~txpower', '2000'))
     hopTime = int(rospy.get_param('~hopTime', '40'))
     tagTopicName = rospy.get_param('~tagTopicName', 'lastTag')        
     RFIDdeviceURI= rospy.get_param('~RFIDdeviceURI','tmr:///dev/rfid')
     frame_id= rospy.get_param('~frame_id','lastTagFr')
 
+    # Create publisher
+    tag_pub=rospy.Publisher(tagTopicName, TagReading,queue_size=0)
+
     # init reader    
     rfid.init()
-    reader = rfid.startReader(self.RFIDdeviceURI, rfidCallback)    
+    reader = rfid.startReader(RFIDdeviceURI, rfidCallback)    
     rfid.setHopTime(reader, hopTime) 
     rfid.setRegionEU(reader)
     rfid.setPower(reader, txpower)        
-                
-    # Create publisher
-    tag_pub=rospy.Publisher(tagTopicName, TagReading,queue_size=0)
+    rospy.loginfo('Tx Power is = %2.2f dBm', txpower/100)                
 
     #and wait
     rospy.spin()    
