@@ -33,12 +33,6 @@ Queue* communicatorQueue;
 
 int RFIDinit(ForeignCallback callbackHandle)
 {
-	if(callbackHandle == NULL)
-	{
-		printf("Error: No callback function provided\n");
-		return -1;
-	}
-
 	foreignCallback = callbackHandle;
 
 	communicatorQueue = createQueue();
@@ -88,25 +82,27 @@ void* communicatorThreadFunction(void* messageQueue)
 
 		if(message != NULL)
 		{
-			//printf("message receivde\n");
 			if(strcmp(message, "exit") == 0)
 			{
 				isThreadRunning = 0;
 			}
 			else
 			{
-				//printf("thread saw a tag!!: %s\n", message);
+				////////////////////////////////////////////////////////////
+
+				//break apart message, send data to correct callback
+				//make sure if callback is not yet initialised,
+				//that the message is preserved(possibly stuck back onto queue
 				foreignCallback(message);
-				//printf("thread message send!\n");
 			}
 		}
 		else
 		{
-			int milliseconds = 5;
+			int milliseconds = 2;
 			usleep(1000*milliseconds);
 		}
 	}
-	printf("closing\n");
+
 	return NULL;
 }
 
@@ -139,7 +135,7 @@ void exceptionCallback(TMR_Reader *reader, TMR_Status error, void *cookie)
 	fprintf(stderr, "Error:%s\n", TMR_strerr(reader, error));
 }
 
-int startReader(const char* deviceURI)
+int RFIDstartReader(const char* deviceURI)
 {
 	readers = realloc(readers, (readerCount + 1) * sizeof(TMR_Reader*));
 	TMR_Reader* pr = malloc(sizeof(TMR_Reader));
@@ -248,10 +244,10 @@ int startReader(const char* deviceURI)
 	return (uniqueReaderInstance - 1);
 }
 
-int stopReader(int readerId)
+int RFIDstopReader(ReaderID readerID)
 {
 	int error;
-	error=checkError(TMR_stopReading(readers[readerId]), "Stopping reader");
+	error = checkError(TMR_stopReading(readers[readerID]), "Stopping Reader");
 
 	return error;
 }
@@ -270,12 +266,11 @@ int checkError(TMR_Status status, const char* msg)
 		printf("%s: Ok\n", msg);
 		return 0;
 	}
-	printf("%s: Failed: %s\n", msg, TMR_strerror( status));
-	
+	printf("%s: Failed - %s\n", msg, TMR_strerror(status));
 	return 1;
 }
 
-void getPower(int readerID)
+void getPower(ReaderID readerID)
 {
 	int16_t max, min;
 	int32_t current;
@@ -293,9 +288,10 @@ void getPower(int readerID)
 	checkError(TMR_startReading(readers[readerID]), "Starting reader");
 }
 
-int setPower(int readerID, int value)
+int setPower(ReaderID readerID, int value)
 {
-	int hasError;
+	//error handling on start/stop to do
+	int hasError = 0;
 	printf("Setting read power\n");
 
 	hasError=checkError(TMR_stopReading(readers[readerID]), "Stopping Reader for power reading");
@@ -305,6 +301,18 @@ int setPower(int readerID, int value)
 	     hasError=checkError(TMR_startReading(readers[readerID]), "Starting reader");
 	}
 	return hasError;
+
+
+
+/*
+	checkError(TMR_stopReading(readers[readerID]), "Stopping Reader for power reading");
+	if(checkError(TMR_paramSet(readers[readerID], TMR_PARAM_RADIO_READPOWER, &value), "Setting Radio Power"))
+	{
+		return -1;
+	}
+	checkError(TMR_startReading(readers[readerID]), "Starting reader");
+	return hasError;
+*/
 }
 
  
@@ -350,7 +358,7 @@ uint8_t castValue(char ascii)
 /**
  * Char based Version, needs reader to be stop and restarted
  * */
- int writeTag(int readerId, char epcData[], uint8_t epcBytes)
+int writeTag(ReaderID readerId, char epcData[], uint8_t epcBytes)
 {
     int error;
     TMR_TagData epc;
@@ -411,7 +419,7 @@ uint8_t castValue(char ascii)
  * Reader must be stopped and restarted before using it.
  * We assume both epcData epcDataOLD have same lenght
  * */
- int renameTag(int readerId, char epcDataOLD[], char epcData[], uint8_t epcBytes)
+int renameTag(ReaderID readerId, char epcDataOLD[], char epcData[], uint8_t epcBytes)
 {
     int error;
     TMR_TagData epc;
@@ -470,7 +478,7 @@ uint8_t castValue(char ascii)
 /**
  * Unchecked version, needs reader to be stop and restarted
  * */
- int writeTag2(int readerId, uint8_t epcData[], uint8_t epcBytes)
+int writeTag2(ReaderID readerId, uint8_t epcData[], uint8_t epcBytes)
 {
     int error;
     TMR_TagData epc;
@@ -485,7 +493,7 @@ uint8_t castValue(char ascii)
 		if (i<11) printf(", ");
 	}
     printf("]\n");
-    
+
     //epc.epcByteCount = sizeof(epcData) / sizeof(epcData[0]);
     epc.epcByteCount = epcBytes;
     memcpy(epc.epc, epcData, epc.epcByteCount * sizeof(uint8_t));
@@ -499,15 +507,14 @@ uint8_t castValue(char ascii)
 	} 
 	else
 	{
-		printf("CANNOT set tag to known value\n");		
+		printf("CANNOT set tag to known value\n");
 	}
 	
 
     return error;
-  }
+}
 
 
- 
  
  
  /*
@@ -515,7 +522,7 @@ uint8_t castValue(char ascii)
   * 
   * 
   **/
-int writeTagOLD(int readerId, uint8_t newEpcData[], uint8_t epcBytes)
+int writeTagOLD(ReaderID readerId, uint8_t newEpcData[], uint8_t epcBytes)
 {
     int error;
     uint8_t epcData[] = {
@@ -584,10 +591,7 @@ int writeTagOLD(int readerId, uint8_t newEpcData[], uint8_t epcBytes)
 	return error;
   }
 
-
-
-
-void getHopTime(int readerID)
+void getHopTime(ReaderID readerID)
 {
 	checkError(TMR_stopReading(readers[readerID]), "Stopping reader for hop time reading");
 
@@ -603,7 +607,7 @@ void getHopTime(int readerID)
 
 }
 
-void setHopTime(int readerID, int value)
+void setHopTime(ReaderID readerID, int value)
 {
 	uint32_t hoptime = (uint32_t) value;
 

@@ -60,8 +60,8 @@ def startReader(deviceURI, callbackFunction):
     readerID = lib.startReader(deviceURI)
 
     #lib.RFIDclose()
-    #lib.getHopTime(readerID)
-    #lib.setHopTime(readerID, 100)
+    lib.getHopTime(readerID)
+    lib.setHopTime(readerID, 100)
 
     callbackList[readerID] = callbackFunction
     return readerID
