@@ -12,12 +12,12 @@ def rfidCallback(message):
 	# + ":" + str(message[4]) + ":" + str(message[5])
 	#print str(msg)
 	
-	#pub.publish(str(msg))
+	pub.publish(message)
 
 if __name__ == "__main__":
 
-	rospy.init_node("rfid_detect1")
-	pub = rospy.Publisher("rfid/rfid_detect1", std_msgs.msg.String, queue_size=100)
+	rospy.init_node("rfid_detect")
+	pub = rospy.Publisher("rfid/rfid_detect", std_msgs.msg.String, queue_size=100)
 
 	rfid.init()
 	reader = rfid.startReader("tmr:///dev/rfid", rfidCallback)

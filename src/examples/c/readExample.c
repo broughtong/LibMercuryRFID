@@ -1,4 +1,4 @@
-//compile with a g++ readExample.cpp -lmercuryrfid
+//compile with a gcc readExample.cpp -lmercuryrfid
 //then a sudo ./a.out
 
 //#include <iostream>
