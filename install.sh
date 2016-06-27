@@ -19,9 +19,11 @@ echo "Adding User to correct groups"
 sudo usermod -a -G dialout $USER
 
 read -p "Make sure the RFID reader is unplugged and then press enter" dummy
-unplugged="$(ls /dev | grep "ttyUSB")"
+#unplugged="$(ls /dev | grep "ttyUSB")"
+unplugged="$(ls /dev | grep "ttyACM")"
 read -p "Now plug the RFID reader in and then press enter" dummy
-plugged="$(ls /dev | grep "ttyUSB")"
+#plugged="$(ls /dev | grep "ttyUSB")"
+plugged="$(ls /dev | grep "ttyACM")"
 
 fileList="$(diff <(echo "$unplugged") <(echo "$plugged"))"
 
@@ -29,11 +31,19 @@ array=(${fileList// / })
 
 for element in "${array[@]}"
 do
-	if [[ $element == "ttyUSB"* ]]
+	#if [[ $element == "ttyUSB"* ]]
+	if [[ $element == "ttyACM"* ]]
 	then
 		file="$element"
 	fi
 done
+
+
+if [ -z "$file" ]
+then
+  echo "RFID reader not detected as usb device !!!!"
+  exit 1 # terminate and indicate error
+fi
 
 echo RFID detected at: $file
 echo "Persistant symlink created at /dev/rfid for this device"
