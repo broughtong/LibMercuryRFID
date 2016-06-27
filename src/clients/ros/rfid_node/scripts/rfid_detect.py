@@ -7,11 +7,12 @@ import rfid
 pub = ""
 
 def rfidCallback(message):
-	msg = str(message[0]) + ":" + str(message[1]) + ":" + str(message[2]) + ":" + str(message[3]) + ":"
+
+	#msg = str(message[0]) + ":" + str(message[1]) + ":" + str(message[2]) + ":" + str(message[3]) + ":"
 	# + ":" + str(message[4]) + ":" + str(message[5])
-	print str(msg)
+	#print str(msg)
 	
-	pub.publish(str(msg))
+	pub.publish(message)
 
 if __name__ == "__main__":
 
@@ -21,9 +22,9 @@ if __name__ == "__main__":
 	rfid.init()
 	reader = rfid.startReader("tmr:///dev/rfid", rfidCallback)
 
-	print rfid.getHopTime(reader) #defaults to 375
-	rfid.setHopTime(reader, 40) 
-	print rfid.getHopTime(reader)
+	#print rfid.getHopTime(reader) #defaults to 375
+	#rfid.setHopTime(reader, 40) 
+	#print rfid.getHopTime(reader)
 
 	rospy.spin()
 

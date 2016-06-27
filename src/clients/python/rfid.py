@@ -7,14 +7,14 @@ import threading
 import Queue
 
 lib = ""
-callbackList = ""
+callbackList = {}
 callbackHandler = ""
 
 def callbackHandlerFunction(char_ptr):
+
     callbackString = ""
 
     try:
-
         for i in char_ptr:
             if i == "\0":
                 break
@@ -24,7 +24,10 @@ def callbackHandlerFunction(char_ptr):
     except:
         print "Indexing Error: Pointer to string conversion in wrapper\n"
 
-    callbackList[0](callbackString)
+    try:
+        callbackList[0](callbackString)
+    except KeyError:
+        print "Keyy error"
 
     return 0
 
@@ -36,8 +39,6 @@ def init():
 
     lib = ctypes.CDLL("libmercuryrfid.so.1")
     lib.RFIDinit(callback)
-
-    callbackList = {}
 
 def getHopTime(readerID):
 
@@ -57,20 +58,24 @@ def startReader(deviceURI, callbackFunction):
 
     global lib, callbackList, callbackHandler
 
-    readerID = lib.startReader(deviceURI)
+    readerID = lib.RFIDstartReader(deviceURI)
 
     #lib.RFIDclose()
     #lib.getHopTime(readerID)
     #lib.setHopTime(readerID, 100)
 
     callbackList[readerID] = callbackFunction
+
+    import time
+    time.sleep(5)
+
     return readerID
 
 def stopReader(readerID):
 
     global lib
 
-    lib.stopReader(readerID)
+    lib.RFIDstopReader(readerID)
 
 # configures READING transmision power to value, given in 100*dBm (should be between 500 and 3000)
 # TODO find out minimum step of power values
