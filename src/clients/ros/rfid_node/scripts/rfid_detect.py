@@ -20,7 +20,7 @@ if __name__ == "__main__":
 	pub = rospy.Publisher("rfid/rfid_detect", std_msgs.msg.String, queue_size=100)
 
 	rfid.init()
-	reader = rfid.startReader("tmr:///dev/rfid", rfidCallback)
+	reader = rfid.startReader("tmr:///dev/ttyACM0", rfidCallback)
 
 	#print rfid.getHopTime(reader) #defaults to 375
 	#rfid.setHopTime(reader, 40) 

@@ -7,7 +7,7 @@ def readCallback(message):
 if __name__ == "__main__":
 
 	rfid.init()
-	reader = rfid.startReader("tmr:///dev/rfid", readCallback)
+	reader = rfid.startReader("tmr:///dev/ttyACM0", readCallback)
 
 	_ = raw_input()
 

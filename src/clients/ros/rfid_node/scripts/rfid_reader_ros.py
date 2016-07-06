@@ -98,7 +98,7 @@ if __name__ == "__main__":
     txpower = int(rospy.get_param('~txpower', '2000'))
     hopTime = int(rospy.get_param('~hopTime', '40'))
     tagTopicName = rospy.get_param('~tagTopicName', 'lastTag')        
-    RFIDdeviceURI= rospy.get_param('~RFIDdeviceURI','tmr:///dev/rfid')
+    RFIDdeviceURI= rospy.get_param('~RFIDdeviceURI','tmr:///dev/ttyACM0')
     frame_id= rospy.get_param('~frame_id','lastTagFr')
 
     # Create publisher
