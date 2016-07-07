@@ -1,16 +1,19 @@
-namespace rfid{
+namespace rfid
+{
 	typedef int ReaderID;
+	typedef void (*ForeignCallback)(const char* message);
 
-	void init();
-	ReaderID startReader();
-	void stopReader();
+	void init(rfid::ForeignCallback callbackHandle);
+	rfid::ReaderID startReader(const char* deviceURI);
+	void stopReader(rfid::ReaderID readerID);
 	void close();
 
 	extern "C"
 	{
-		int startReader(const char* deviceURI, void (*callback)(const char** message));
-		int stopReader(int readerID);
-		int closeRFID();
+		int RFIDinit(ForeignCallback callbackHandle);
+		int RFIDclose();
+		int RFIDstartReader(const char* deviceURI);
+		int RFIDstopReader(rfid::ReaderID readerID);
 	}
 }
 

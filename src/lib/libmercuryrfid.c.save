@@ -89,8 +89,7 @@ void* communicatorThreadFunction(void* messageQueue)
 			else
 			{
 				////////////////////////////////////////////////////////////
-
-				//break apart message, send data to correct callback
+				//break apart message
 				//make sure if callback is not yet initialised,
 				//that the message is preserved(possibly stuck back onto queue
 				foreignCallback(message);

@@ -100,7 +100,7 @@ if __name__ == "__main__":
     txpower = int(rospy.get_param('~txpower', '3000'))
     
     rfid.init()
-    reader = rfid.startReader("tmr:///dev/rfid", rfidCallback)
+    reader = rfid.startReader("tmr:///dev/ttyACM0", rfidCallback)
         
     rfid.setHopTime(reader, 40) 
     rfid.setRegionEU(reader)

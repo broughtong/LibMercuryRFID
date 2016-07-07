@@ -35,12 +35,6 @@ do
 	fi
 done
 
-if [ -z "$file" ]
-then
-  echo "reader not detected as usb device !!!!"
-  exit 1 # terminate and indicate error
-fi
-
 echo RFID detected at: $file
 echo "Persistant symlink created at /dev/rfid for this device"
 
