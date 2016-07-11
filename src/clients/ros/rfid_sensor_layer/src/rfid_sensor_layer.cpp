@@ -85,7 +85,7 @@ double RFIDSensorLayer::sensor_model(double x_rel, double y_rel, double ang_rel,
     double priorProb=1;
      
     double d2 = (x_rel*x_rel+y_rel*y_rel);   
-    if (d!=0)
+    if (d2!=0)
         priorProb=1/d2;
     
     priorProb*=(M_PI/2-abs(ang_rel))/(3*M_PI/2);

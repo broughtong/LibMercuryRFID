@@ -146,6 +146,8 @@ add_executable(
    src/rfid_gridMap.cpp
    )
 
+add_dependencies(rfid_grid_map_node rfid_node_generate_messages_cpp)
+
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(rfid_grid_map_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
