@@ -19,21 +19,44 @@ echo "Adding User to correct groups"
 sudo usermod -a -G dialout $USER
 
 read -p "Make sure the RFID reader is unplugged and then press enter" dummy
-unplugged="$(ls /dev | grep "ttyUSB")"
+unplugged_u="$(ls /dev | grep "ttyUSB")"
+unplugged_a="$(ls /dev | grep "ttyACM")"
+
 read -p "Now plug the RFID reader in and then press enter" dummy
-plugged="$(ls /dev | grep "ttyUSB")"
+plugged_u="$(ls /dev | grep "ttyUSB")"
+plugged_a="$(ls /dev | grep "ttyACM")"
 
-fileList="$(diff <(echo "$unplugged") <(echo "$plugged"))"
+fileList_u="$(diff <(echo "$unplugged_u") <(echo "$plugged_u"))"
+fileList_a="$(diff <(echo "$unplugged_a") <(echo "$plugged_a"))"
 
-array=(${fileList// / })
+array_u=(${fileList_u// / })
+array_a=(${fileList_a// / })
 
-for element in "${array[@]}"
+for element in "${array_u[@]}"
 do
 	if [[ $element == "ttyUSB"* ]]
 	then
 		file="$element"
 	fi
 done
+
+if [ -z "$file" ]
+then
+   for element in "${array_a[@]}"
+   do
+      if [[ $element == "ttyACM"* ]]
+      then
+	file="$element"
+      fi
+   done
+
+if [ -z "$file" ]
+then
+  echo "RFID reader not detected as usb device !!!!"
+  exit 1 # terminate and indicate error
+fi
+
+
 
 echo RFID detected at: $file
 echo "Persistant symlink created at /dev/rfid for this device"
