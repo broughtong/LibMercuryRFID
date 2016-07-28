@@ -1,6 +1,7 @@
 import rospy
 import Queue
 import threading
+import pickle
 from std_msgs.msg import String
 from tf import TransformListener
 
@@ -20,6 +21,7 @@ class Tag:
 
 tagList = []
 queue = Queue.Queue()
+model = []
 
 class controlThread(threading.Thread):
 	def __init__(self, queue):
@@ -111,7 +113,14 @@ def tagCallback(data):
 
 	queue.put("TAG:" + str(data))
 
+def loadSensorModel():
+
+	global model
+	model = pickle.load(open("models/3000.p", "rb"))
+
 if __name__ == '__main__':
+
+	loadSensorModel()
 
 	thread = controlThread(queue)
 	thread.start()
