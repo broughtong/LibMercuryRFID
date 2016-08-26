@@ -1,0 +1,12 @@
+<launch>     
+  <!-- Launch define_areas: plots squares on every pair of clicked points. yaml file is initial config, taken from rfid gridmap package-->
+  <node pkg="define_areas" type="define_areas_node" name="define_areas_node" output="screen">
+        <rosparam param="regions_file" subst_value="True">$(find rfid_grid_map)/config/LCAS.yaml</rosparam>
+  </node>
+    
+  <!-- Launch the grid map visualizer -->
+  <node pkg="grid_map_visualization" type="grid_map_visualization" name="areas_grid_map_visualization" output="screen">
+    <rosparam command="load" file="$(find define_areas)/config/visualization.yaml" />
+  </node>
+  
+</launch>

@@ -1,0 +1,33 @@
+
+<launch>
+    
+    
+    
+  <arg name="tagID" default="390000010000000000000007"/>
+  <arg name="object" default="kitchen table"/>
+
+  <group ns="grid_$(arg tagID)">
+  <!-- Launch rfid_grid_map: locate objects -->
+  <node pkg="rfid_grid_map" type="rfid_grid_map_node" name="rfid_grid_map_node" output="screen">
+      <remap from="/rfid_grid_map/lastTag" to="/lastTag"/>	
+      <rosparam param="global_frame">"map"</rosparam>
+      <rosparam param="tagID" subst_value="True">"$(arg tagID)"</rosparam>        
+      <rosparam param="object" subst_value="True">"$(arg object)"</rosparam>        
+      <rosparam param="map_size_x">20</rosparam>        
+      <rosparam param="map_size_y">30</rosparam>   
+      <rosparam param="orig_x">0</rosparam>        
+      <rosparam param="orig_y">7</rosparam>       
+      <rosparam param="map_resolution">0.3</rosparam>        
+      <rosparam param="regions_file" subst_value="True">$(find rfid_grid_map)/config/LCAS.yaml</rosparam>
+  </node>
+      
+  <!-- Launch the grid map visualizer -->
+  <node pkg="grid_map_visualization" type="grid_map_visualization" name="grid_map_visualization" output="screen">
+    <rosparam command="load" file="$(find rfid_grid_map)/config/visualization.yaml" />
+    <rosparam param="grid_map_topic" subst_value="True">/grid_$(arg tagID)/rfid_grid_map_node/grid_map</rosparam>    
+  </node>
+  
+  </group>
+  
+  
+</launch>

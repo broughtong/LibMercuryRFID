@@ -1,0 +1,72 @@
+<launch>
+  <!-- Launch bag file: data -->
+  <param name="use_sim_time" value="true" />  
+  <node pkg="rosbag" type="play" name="player" output="screen" args=" --clock $(find rfid_grid_map)/test/alfie_rfid_30dB_wanders_long.bag"/>
+        
+  <!-- Launch static map: for amcl and display -->
+  <node pkg="map_server" type="map_server" name="lcas_map" output="screen" args="$(find kompai_slam_lcas)/test/WW_GF_2015_02_22_cropped.yaml"/>
+  
+  <!-- Launch amcl: correct odometry -->
+  <include file="$(find kompai_slam_lcas)/launch/amcl_diff.launch" />  
+  <!-- Launch amcl: inital guess to track odometry -->
+  <node pkg="rostopic" type="rostopic" name="arbitrary_name" args="pub /initialpose geometry_msgs/PoseWithCovarianceStamped '{ header: { frame_id: '/map' }, pose: { pose: { position: { x: 0.28, y:  -0.55 }, orientation: { x: 0.0, y: 0.0, z: 0.706, w: 0.707 } }, covariance: [ 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.06853891945200942 ] } }' -1" output="screen"/>
+
+  <!-- Launch the grid map and visualization on grid.launch -->
+  <include file="$(find rfid_grid_map)/launch/grid.launch">
+    <!-- all vars that included.launch requires must be set -->
+    <arg name="tagID" value="390000010000000000000006" />
+    <arg name="object" value="lounge table" />
+  </include>
+
+  <!-- Launch the grid map and visualization on grid.launch -->
+  <include file="$(find rfid_grid_map)/launch/grid.launch">
+    <!-- all vars that included.launch requires must be set -->
+    <arg name="tagID" value="390000010000000000000007" />
+    <arg name="object" value="kitchen table" />
+  </include>
+
+  <!-- Launch the grid map and visualization on grid.launch -->
+  <include file="$(find rfid_grid_map)/launch/grid.launch">
+    <!-- all vars that included.launch requires must be set -->
+    <arg name="tagID" value="390000010000000000000009" />
+    <arg name="object" value="red stapler" />
+  </include>
+  
+  <!-- Launch the grid map and visualization on grid.launch -->
+  <include file="$(find rfid_grid_map)/launch/grid.launch">
+    <!-- all vars that included.launch requires must be set -->
+    <arg name="tagID" value="390000010000000000000010" />
+    <arg name="object" value="xbox gamepad" />
+  </include>
+
+  <!-- Launch the grid map and visualization on grid.launch -->
+  <include file="$(find rfid_grid_map)/launch/grid.launch">
+    <!-- all vars that included.launch requires must be set -->
+    <arg name="tagID" value="390000010000000000000012" />
+    <arg name="object" value="logitech gamepad" />
+  </include>
+
+  <!-- Launch the grid map and visualization on grid.launch -->
+  <include file="$(find rfid_grid_map)/launch/grid.launch">
+    <!-- all vars that included.launch requires must be set -->
+    <arg name="tagID" value="390000010000000000000013" />
+    <arg name="object" value="remote" />
+  </include>
+
+  <!-- Launch the grid map and visualization on grid.launch -->
+  <include file="$(find rfid_grid_map)/launch/grid.launch">
+    <!-- all vars that included.launch requires must be set -->
+    <arg name="tagID" value="390000010000000000000015" />
+    <arg name="object" value="tape holder" />
+  </include>
+
+  <!-- Launch the grid map and visualization on grid.launch -->
+  <include file="$(find rfid_grid_map)/launch/grid.launch">
+    <!-- all vars that included.launch requires must be set -->
+    <arg name="tagID" value="390000010000000000000020" />
+    <arg name="object" value="chair" />
+  </include>
+  
+  <!-- Launch RViz with the demo configuration -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find rfid_grid_map)/rviz/rfid_gridmap_test.rviz" />
+</launch>

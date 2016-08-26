@@ -1,0 +1,102 @@
+mapName: LCAS Lab
+Regions:
+  - name: kitchen
+    min:
+      x: 1.51
+      y: -1.01
+    max:
+      x: 4.52
+      y: 2.14
+    subregions:
+      - name: kitchen - fridge
+        min:
+          x: 1.51
+          y: -1.01
+        max:
+          x: 4.52
+          y: 0.46
+      - name: kitchen - coffee
+        min:
+          x: 1.51
+          y: 0.46
+        max:
+          x: 4.52
+          y: 2.14
+  - name: lounge
+    min:
+      x: -5.13
+      y: -1.29
+    max:
+      x: -0.27
+      y: 2.23
+    subregions:
+      - name: lounge - sofas
+        min:
+          x: -5.13
+          y: -1.29
+        max:
+          x: -2.52
+          y: 2.23
+      - name: lounge - tv
+        min:
+          x: -2.52
+          y: -1.29
+        max:
+          x: -0.27
+          y: 2.23
+  - name: entrance
+    min:
+      x: -5.13
+      y: 2.23
+    max:
+      x: -2.70
+      y: 4.98
+  - name: entrance corridor
+    min:
+      x: -2.70
+      y: 2.23
+    max:
+      x: 4.52
+      y: 4.98
+  - name: bathroom corridor
+    min:
+      x: -0.22
+      y: -1.23
+    max:
+      x: 1.53
+      y: 2.10
+  - name: workzone corridor
+    min:
+      x: -0.18
+      y: 5.01
+    max:
+      x: 1.00
+      y: 13.86
+  - name: workzone G
+    min:
+      x: -5.04
+      y: 5.00
+    max:
+      x: -0.20
+      y: 8.72
+  - name:  workzone P
+    min:
+      x: 1.06
+      y: 5.09
+    max:
+      x: 4.81
+      y: 8.83
+  - name: workzone Y
+    min:
+      x: -4.97
+      y: 8.72
+    max:
+      x: -0.14
+      y: 13.82
+  - name: workzone T
+    min:
+      x: 1.11
+      y: 8.87
+    max:
+      x: 5.13
+      y: 13.82

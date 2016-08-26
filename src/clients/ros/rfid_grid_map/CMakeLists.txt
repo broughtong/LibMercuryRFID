@@ -112,8 +112,8 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES rfid_grid_map
-  CATKIN_DEPENDS #cv_bridge geometry_msgs grid_map_cv grid_map_loader grid_map_msgs grid_map_ros grid_map_visualization rfid_node roscpp sensor_msgs tf
-#  DEPENDS system_lib
+  CATKIN_DEPENDS yaml-cpp #cv_bridge geometry_msgs grid_map_cv grid_map_loader grid_map_msgs grid_map_ros grid_map_visualization rfid_node roscpp sensor_msgs tf
+  DEPENDS yaml-cpp #system_lib
 )
 
 ###########
@@ -155,7 +155,7 @@ add_dependencies(rfid_grid_map_node rfid_node_generate_messages_cpp)
 ## Specify libraries to link a library or executable target against
  target_link_libraries(
    rfid_grid_map_node
-   ${catkin_LIBRARIES}
+   ${catkin_LIBRARIES} yaml-cpp
  )
 
 #############

@@ -1,0 +1,12 @@
+<launch>    
+  <!-- Launch static map: see where areas are placed -->
+  <node pkg="map_server" type="map_server" name="lcas_map" output="screen" args="$(find kompai_slam_lcas)/test/WW_GF_2015_02_22_cropped.yaml"/>
+  
+  <!-- Launch define_areas and visualizer-->
+  <include file="$(find define_areas)/launch/define_areas.launch"/>
+      
+  
+  <!-- Launch RViz with the demo configuration -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find define_areas)/rviz/define_areas.rviz" />
+  
+</launch>

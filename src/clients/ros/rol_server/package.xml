@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package>
+  <name>rol_server</name>
+  <version>0.0.0</version>
+  <description>RFID object localization server</description>
+
+
+  <maintainer email="mfernandezcarmona@lincoln.ac.uk">Manuel</maintainer>
+  <author email="mfernandezcarmona@lincoln.ac.uk">Manuel</author>
+
+  <license>GPL</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>rospy</build_depend>  
+  <build_depend>std_msgs</build_depend>  
+  <build_depend>message_generation</build_depend>  
+  <run_depend>message_runtime</run_depend>  
+  <run_depend>std_msgs</run_depend>
+  <run_depend>rospy</run_depend>
+  
+  <export>
+
+  </export>
+</package>
+

@@ -1,0 +1,25 @@
+mapName: LCAS Lab
+Regions:
+   -name: kitchen 
+    min:[0.0,0.0]
+    max:[1.0,1.0]
+    subregions: 
+       -name:"kichen fridge" 
+        min:[0.0,0.0]
+        max:[1.0,0.5]
+       -name:"kichen cook" 
+        min:[0.0,0.5]
+        max:[1.0,1.0]	
+   -name:"living" 
+    min:[0.0,1.0]
+    max:[1.0,2.0]
+    subregions:
+       -name:"living coach" 
+        min:[0.0,1.0]
+        max:[1.0,1.5]
+       -name:"living table"
+        min:[0.0,1.5]
+        max:[1.0,2.0]	
+   -name:"bathroom"
+    min:[1.0,0.0]
+    max:[2.0,1.0]

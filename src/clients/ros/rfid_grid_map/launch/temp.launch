@@ -1,0 +1,24 @@
+
+<launch>
+  <!-- Launch rfid_grid_map: locate objects -->
+  <node pkg="rfid_grid_map" type="rfid_grid_map_node" name="rfid_grid_map_node" output="screen">
+      <remap from="/rfid_grid_map/lastTag" to="/lastTag"/>	
+      <rosparam param="global_frame">"map"</rosparam>
+      <rosparam param="tagID">"300833B2DDD9014000000010"</rosparam>        
+      <rosparam param="map_size_x">20</rosparam>        
+      <rosparam param="map_size_y">20</rosparam>   
+      <rosparam param="orig_x">0</rosparam>        
+      <rosparam param="orig_y">7</rosparam>       
+      <rosparam param="map_resolution">0.3</rosparam>        
+      <rosparam param="regions_file" subst_value="True">$(find rfid_grid_map)/config/LCAS.yaml</rosparam>
+  </node>
+  
+  
+  
+  <!-- Launch the grid map visualizer -->
+  <node pkg="grid_map_visualization" type="grid_map_visualization" name="grid_map_visualization" output="screen">
+    <rosparam command="load" file="$(find rfid_grid_map)/config/visualization.yaml" />
+  </node>
+  
+  
+</launch>

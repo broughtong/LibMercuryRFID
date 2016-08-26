@@ -12,13 +12,17 @@
 #include <grid_map_ros/grid_map_ros.hpp>
 //#include <math.h>  // isnan
 
+#include <yaml-cpp/yaml.h>
 // ROS
 #include <ros/ros.h>
+#include <ros/console.h>
 #include <std_msgs/String.h>
+#include <tf/transform_listener.h>
+  
 // #include <geometry_msgs/PolygonStamped.h> //for future use with more complex shapes
 #include <rfid_node/TagReading.h>
 //#include <std_msgs/Int16.h>
-#include <tf/transform_listener.h>
+
 
 using namespace std;
 using namespace ros;
@@ -45,9 +49,9 @@ class rfid_gridMap
       void tagCallback(const rfid_node::TagReading::ConstPtr& msg);
     
       //! periodic map updates
-      void timerCallback(const ros::TimerEvent&);
+      void updateMapCallback(const ros::TimerEvent&);
     
-      void timerCallback2(const ros::TimerEvent&);
+      void updateProbs(const ros::TimerEvent&);
       
       void updateTransform();        
       
@@ -66,15 +70,32 @@ class rfid_gridMap
       //! ROS subscriber to rfid messages...
       ros::Subscriber sub_;
       //! Grid map data.
-      grid_map::GridMap map_;
+      grid_map::GridMap map_;      
+      
+      //! publisher for probs
+      ros::Publisher prob_pub_ ;
+       
+      //! map Size (in meters)
+      double size_x; 
+      double size_y;
       //! Grid map publisher.
       ros::Publisher gridMapPublisher_;
 
       tf::TransformListener listener_;
       tf::StampedTransform transform_;
-        
-     double intensity_;
-  
+
+      //! gridmap actualization rate .        
+      double intensity_;
+      //! regions description file 
+      YAML::Node config ;
+      //! rfid tag id
+      std::string tagID;
+      
+      //! global frame id (for maps)
+      std::string global_frame;
+      //! robot frame id 
+      std::string robot_frame;
+
 }; // End of Class rfid_gridMap
 
 } // end of  namespace rfid_grid_map
