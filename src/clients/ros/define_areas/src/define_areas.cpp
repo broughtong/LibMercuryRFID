@@ -79,7 +79,7 @@ namespace define_areas {
           drawSquare(area->startX,area->startY,area->endX,area->endY,0.5);
           plotMarker(  ( area->endX - area->startX ) / 2 ,( area->endY - area->startY) / 2, area->name );
           publishMap();
-          ros::Duration d(5);
+          ros::Duration d(2);
           d.sleep();
       }
       
