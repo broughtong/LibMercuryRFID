@@ -4,13 +4,14 @@
   
 <launch>  
 
-  <!--  Our bag  -->     
+  <!--  Our bag
+        -r X refers to replay speed -->
   <param name="use_sim_time" value="true" />
-  <node pkg="rosbag" type="play" name="player" output="screen" args=" --clock $(find rfid_rssi)/tests/alfie_model_1.6m_to_tag_antenna_height_0.65m.bag"/>	
+  <node pkg="rosbag" type="play" name="player" output="screen" args=" --clock $(find rfid_rssi)/bags/long.bag -r 10.0"/>	
   
   <!--  Tag position referred to map coordinates
         In this bag, tag was  300833B2DDD9014000000014 -->     
-  <node pkg="tf" type="static_transform_publisher" name="tag_broadcaster" args="-0.25 1.45 0 0 0 0 1 map tag 100" />
+  <node pkg="tf" type="static_transform_publisher" name="tag_broadcaster" args="-0.25 1.45 0 0 0 0 1 map rfid/tags/300833B2DDD901400000001 100" />
 
   <!--  Static map. Needed for amcl  -->     
   <node pkg="map_server" type="map_server" name="lcas_map" output="screen" args="$(find kompai_slam_lcas)/test/WW_GF_2015_02_22_cropped.yaml"/>
@@ -22,9 +23,12 @@
   <node pkg="rostopic" type="rostopic" name="arbitrary_name" args="pub /initialpose geometry_msgs/PoseWithCovarianceStamped '{ header: { frame_id: '/map' }, pose: { pose: { position: { x: 1.42, y:  1.58 }, orientation: { x: 0.0, y: 0.0, z: -1, w: 0 } }, covariance: [ 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.06853891945200942 ] } }' -1" output="screen"/>
 
   <!--  Just for visualization purposes  -->     
-  <node pkg="rviz" type="rviz" output="screen" name="rviz_node" args="-d $(find kompai_slam_lcas)/cfg/amcl.rviz"/>	
+  <!--node pkg="rviz" type="rviz" output="screen" name="rviz_node" args="-d $(find kompai_slam_lcas)/cfg/amcl.rviz"/ -->	
+
+  <!--  Start Sensor Model Node -->
+  <node pkg="rfid_rssi" type="scripts/model_test.py" name="testnode" args="300833B2DDD9014000000014" output="screen" />
   
   <!--  This generates several folders under scripts folder with models  -->     
-  <node pkg="rfid_rssi" type="model.py" output="screen" name="modelling_node"/>	
+  <!--node pkg="rfid_rssi" type="model.py" output="screen" name="modelling_node"/-->	
 </launch>
       
