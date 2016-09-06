@@ -1,0 +1,45 @@
+  <!-- 
+        Launches all required nodes to move robot programatically
+  -->
+  
+<launch>  
+
+  <!--  Robot drivers  -->     
+  <include file="$(find ros_pure)/launch/ros_pure.launch" />  
+  
+  <!--  Static map. Needed for amcl  -->     
+  <node pkg="map_server" type="map_server" name="lcas_map" output="screen" args="$(find kompai_slam_lcas)/test/WW_GF_2015_02_22_cropped.yaml"/>
+
+  <!--  AMCL with configuration for LCAS  -->     
+  <include file="$(find kompai_slam_lcas)/launch/amcl_diff.launch" />  
+
+  <!--  Navigation Stack  -->     
+    <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+    <rosparam file="$(find kompai_2dnav)/config/costmap_common_params.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find kompai_2dnav)/config/costmap_common_params.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find kompai_2dnav)/config/local_costmap_params.yaml" command="load" />
+    <rosparam file="$(find kompai_2dnav)/config/global_costmap_params.yaml" command="load" />
+    <!--  Changed this one to move robot reeeeeally slow  -->     
+    <rosparam file="$(find rfid_rssi)/config/base_local_planner_params.yaml" command="load" />
+  </node>
+  
+  <!--  Initial robot pose. Used by amcl as seed.
+        Use rviz and rostopic echo to get a good Pose before anything else.-->             
+  <-- node pkg="rostopic" type="rostopic" name="arbitrary_name" args="pub /initialpose geometry_msgs/PoseWithCovarianceStamped '{ header: { frame_id: '/map' }, pose: { pose: { position: { x: 1.42, y:  1.58 }, orientation: { x: 0.0, y: 0.0, z: -1, w: 0 } }, covariance: [ 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.06853891945200942 ] } }' -1" output="screen"/>
+
+  <!--  Rest is commented by now -->     
+  
+  <!--  Tag position referred to map coordinates
+        In this bag, tag was  300833B2DDD9014000000014 -->     
+  <!--node pkg="tf" type="static_transform_publisher" name="tag_broadcaster" args="-0.25 1.45 0 0 0 0 1 map tag 100" / -->
+
+  <!--  Just for visualization purposes  -->     
+  <!-- node pkg="rviz" type="rviz" output="screen" name="rviz_node" args="-d $(find kompai_slam_lcas)/cfg/amcl.rviz"/ -->	
+  
+  <!--  This generates several folders under scripts folder with models  -->     
+  <!-- node pkg="rfid_rssi" type="model.py" output="screen" name="modelling_node"/ -->	
+  
+  
+  
+</launch>
+      

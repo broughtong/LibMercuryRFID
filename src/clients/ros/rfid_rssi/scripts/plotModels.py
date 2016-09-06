@@ -12,6 +12,62 @@ from matplotlib.ticker import MaxNLocator
 
 # Main function.
 if __name__ == '__main__':
+
+    if False:
+
+        tid = '300833B2DDD9014000000014'
+        dx, dy = 0.3, 0.3
+        gridSize = 8
+
+        # should be something like ./300833B2DDD9014000000004/866900
+        fileDIR = './' + tid
+        files = os.listdir(fileDIR)
+        freqSet = list()
+        for fileName in files:
+            f = (fileName[0:6])
+            if f not in freqSet:
+                freqSet.append(f)
+        freqSet.sort()
+
+        numCols = math.ceil(gridSize / dx)
+        numRows = math.ceil(gridSize / dy)
+        numFreqs = len(freqSet)
+
+        av_rssi_model = np.zeros((numCols, numRows, numFreqs))
+        va_rssi_model = np.zeros((numCols, numRows, numFreqs))
+
+        for fileName in files:
+            doPrint = False
+            if 'av_rssi' in fileName:
+                fileURIprefix = fileDIR + '/'
+                fileURI = fileURIprefix + fileName
+                data = np.loadtxt(fileURI, delimiter=',')
+
+                f = fileName[0:6]
+                findex = freqSet.index(f)
+
+                av_rssi_model[:, :, findex] = data
+                doPrint = True
+
+            if 'va_rssi' in fileName:
+                fileURIprefix = fileDIR + '/'
+                fileURI = fileURIprefix + fileName
+                data = np.loadtxt(fileURI, delimiter=',')
+
+                f = fileName[0:6]
+                findex = freqSet.index(f)
+
+                va_rssi_model[:, :, findex] = data
+                doPrint = True
+
+            if doPrint:
+                print fileName[7:-4] + " (" + fileName[0:6] + ")"
+                fig, axes = plt.subplots()
+                axes.imshow(data, interpolation='gaussian')
+                axes.set_title('gauzz')
+                plt.show()
+
+if False:
     tid = '300833B2DDD9014000000014'
     # resolution and grid size in meters
     dx, dy = 0.3, 0.3
