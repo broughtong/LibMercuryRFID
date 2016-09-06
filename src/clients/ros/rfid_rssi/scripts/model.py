@@ -1,10 +1,21 @@
+#import ros
 import rospy
-import pickle
-import sys
 import tf
 
+#for loading models
+import pickle
+import os
+
+#getting command line arguments
+import sys
+
+#for reading rfid messages
 from std_msgs.msg import String
+
+#for writing navigation og messages
 from nav_msgs.msg import *
+
+#for trig for map calculations
 from math import *
 
 #Configurables - distances in meters
@@ -12,12 +23,20 @@ from math import *
 #gridResolution = the cell size of the map
 gridSize = 8
 gridResolution = 0.5
+transmissionPower = 3000
 
-#Globals
+#globals
 tagIDs = []
 tfListener = ""
 gridTotal = int(gridSize/gridResolution)
 pub = rospy.Publisher("/rfid/ocmap", OccupancyGrid, queue_size=10)
+#this paragraph is not correct
+#model, each element is a frequency model
+#each frequency model has the following format
+#[frequency(kHz), 2d occupancy grid]
+#each grid cell contains
+#[no of detections, mean rssi, sd rssi]
+model = []
 
 def tagCallback(data):
 
@@ -25,7 +44,7 @@ def tagCallback(data):
 	data = data.split(":")
 	tagID = data[2]
 	freq = data[5]
-	rssi = data[3]
+	rssi = int(data[3])
 	tx = 3000
 
 	if not tagID in tagIDs:
@@ -44,24 +63,76 @@ def tagCallback(data):
 	now = rospy.Time(0)
 	tfListener.waitForTransform("map", "base_link", now, rospy.Duration(4.0))
 	r_pos, r_quat = tfListener.lookupTransform("/map", "/base_link", now)
-	tfListener.waitForTransform("map", "tag", now, rospy.Duration(4.0))
+	tfListener.waitForTransform("map", "rfid/tags/" + tagID, now, rospy.Duration(4.0))
 	t_pos, t_quat = tfListener.lookupTransform("/map", "/rfid/tags/" + tagID, now)
 
-	roll, pitch, yaw = tf.transformations.euler_from_quaternion([r_quat[0], r_quat[1], r_quat[2], r_quat[3]])
+	foundFrequency = False
 
-	xt = t_pos[0] - r_pos[0]
-	yt = t_pos[1] - r_pos[1]
-	x = xt * cos(-yaw) - yt * sin(-yaw)
-	y = xt * sin(-yaw) + yt * cos(-yaw)
-	z = 0
+	for i in model:
+		if i[1] == freq:
+			foundFrequency = True
 
-	rssi = int(rssi)
-	rssi = rssi * -2
-	rssi = rssi - 60
-	setMapValue(x, y, rssi)
+	if foundFrequency == False:
+		map = createMap()
+		detections = []
+		mean = []
+		std = []
 
-	pub.publish(map)
+		for i in xrange((gridTotal * 2) * (gridTotal * 2)):
+			detections.append(0)
+			mean.append(0)
+			std.append(0)
 
+		pub = rospy.Publisher("rfid/sensor_model/" + str(freq), OccupancyGrid, queue_size=10)
+
+		newFreq = [pub, freq, map, detections, mean, std]
+		model.append(newFreq)
+
+	for i in model:
+		if i[1] == freq:
+			roll, pitch, yaw = tf.transformations.euler_from_quaternion([r_quat[0], r_quat[1], r_quat[2], r_quat[3]])
+
+			xt = t_pos[0] - r_pos[0]
+			yt = t_pos[1] - r_pos[1]
+			x = xt * cos(-yaw) - yt * sin(-yaw)
+			y = xt * sin(-yaw) + yt * cos(-yaw)
+			z = 0
+
+			if x > gridTotal or y > gridTotal or -x > gridTotal or -y > gridTotal:
+				print "Warning: Tag detected beyond the range of the model being created"
+				return
+
+			yoffset = ((y - (y % gridResolution)) + gridSize) / gridResolution
+			xoffset = ((x - (x % gridResolution)) + gridSize) / gridResolution
+			cellIndex = int((gridTotal * 2 * yoffset) + xoffset)
+
+			#update mean
+			i[4][cellIndex] = ((i[4][cellIndex] * i[3][cellIndex]) + rssi) / (i[3][cellIndex] + 1)
+
+			#Increment no of detections
+			i[3][cellIndex] = i[3][cellIndex] + 1
+
+			#todo: add standard dev
+
+			#good approximation for mapping rssi to 0-100 scale
+			mean = (i[4][cellIndex] * -2) - 60
+
+			i[2].data[cellIndex] = mean
+			
+			i[0].publish(i[2])
+
+#def setMapValue(x, y, val):
+#	if x > gridTotal or y > gridTotal or -x > gridTotal or -y > gridTotal:
+#		return
+#	else:
+#		yoffset = ((y - (y % gridResolution)) + gridSize) / gridResolution
+#		xoffset = ((x - (x % gridResolution)) + gridSize) / gridResolution
+#		index = int((gridTotal * 2 * yoffset) + xoffset)
+#
+#		if map.data[index] == -1:
+#			map.data[index] = val
+#		else:
+#			map.data[index] = (map.data[index] + val) / 2
 def createMap():
 	map = OccupancyGrid()
 	map.header.frame_id = "/base_link"
@@ -80,22 +151,9 @@ def createMap():
 		map.data.append(-1)
 	return map
 
-def setMapValue(x, y, val):
-	if x > gridTotal or y > gridTotal or -x > gridTotal or -y > gridTotal:
-		return
-	else:
-		yoffset = ((y - (y % gridResolution)) + gridSize) / gridResolution
-		xoffset = ((x - (x % gridResolution)) + gridSize) / gridResolution
-		index = int((gridTotal * 2 * yoffset) + xoffset)
-
-		if map.data[index] == -1:
-			map.data[index] = val
-		else:
-			map.data[index] = (map.data[index] + val) / 2
-
 def main():
 
-	global tfListener
+	global tfListener, model
 	
 	args = sys.argv
 	del args[0]
@@ -107,11 +165,19 @@ def main():
 	for i in args:
 		tagIDs.append(i)
 
+	fname = "models/" + str(transmissionPower) + ".p"
+
+	#uncomment to load existing map on start
+	#if os.path.isfile(fname):
+	#	model = pickle.load(open(fname, "rb"))
+
 	rospy.init_node("buildModel")
 	tfListener = tf.TransformListener()
 	rfidSub = rospy.Subscriber("rfid/rfid_detect", String, tagCallback)
 
 	rospy.spin()
+
+	pickle.dump(model, open(fname, "wb"))
 	
 if __name__ == "__main__":
 	main()
