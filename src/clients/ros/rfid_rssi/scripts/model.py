@@ -7,40 +7,19 @@ from std_msgs.msg import String
 from nav_msgs.msg import *
 from math import *
 
-tagLocations = []
-tfListener = ""
-TagLocations = (0, 1.6, 0)
-
+#Configurables - distances in meters
+#gridSize = distance from robot to edge of map in all directions
+#gridResolution = the cell size of the map
 gridSize = 8
 gridResolution = 0.5
 
+#Globals
+tagIDs = []
+tfListener = ""
 gridTotal = int(gridSize/gridResolution)
-
-map = OccupancyGrid()
-map.header.frame_id = "/base_link"
-map.info.resolution = gridResolution
-map.info.width = gridTotal * 2
-map.info.height = gridTotal * 2
-map.info.origin.position.x = -gridSize
-map.info.origin.position.y = -gridSize
-map.info.origin.position.z = 0
-map.info.origin.orientation.w = 1
-map.info.origin.orientation.x = 0
-map.info.origin.orientation.y = 0
-map.info.origin.orientation.z = 0
-map.data = []
-for i in xrange(0, int((gridTotal * 2) * (gridTotal * 2))):
-	map.data.append(-1)
 pub = rospy.Publisher("/rfid/ocmap", OccupancyGrid, queue_size=10)
 
 def tagCallback(data):
-	
-	if not tfListener.frameExists("/base_link"):
-		print "Error finding tf frame for base link"
-		return
-	if not tfListener.frameExists("/odom_combined"):
-		print "Error finding tf frame for odom"
-		return
 
 	data = str(data)
 	data = data.split(":")
@@ -49,11 +28,24 @@ def tagCallback(data):
 	rssi = data[3]
 	tx = 3000
 
+	if not tagID in tagIDs:
+		return
+	
+	if not tfListener.frameExists("/base_link"):
+		print "Unable to find tf frame for base link"
+		return
+	if not tfListener.frameExists("/map"):
+		print "Unable to find tf frame for map"
+		return
+	if not tfListener.frameExists("/rfid/tags/" + tagID):
+		print "Unable to find tf frame for rfid tag: " + tagIDs[0]
+		return
+
 	now = rospy.Time(0)
 	tfListener.waitForTransform("map", "base_link", now, rospy.Duration(4.0))
 	r_pos, r_quat = tfListener.lookupTransform("/map", "/base_link", now)
 	tfListener.waitForTransform("map", "tag", now, rospy.Duration(4.0))
-	t_pos, t_quat = tfListener.lookupTransform("/map", "/tag", now)
+	t_pos, t_quat = tfListener.lookupTransform("/map", "/rfid/tags/" + tagID, now)
 
 	roll, pitch, yaw = tf.transformations.euler_from_quaternion([r_quat[0], r_quat[1], r_quat[2], r_quat[3]])
 
@@ -69,6 +61,24 @@ def tagCallback(data):
 	setMapValue(x, y, rssi)
 
 	pub.publish(map)
+
+def createMap():
+	map = OccupancyGrid()
+	map.header.frame_id = "/base_link"
+	map.info.resolution = gridResolution
+	map.info.width = gridTotal * 2
+	map.info.height = gridTotal * 2
+	map.info.origin.position.x = -gridSize
+	map.info.origin.position.y = -gridSize
+	map.info.origin.position.z = 0
+	map.info.origin.orientation.w = 1
+	map.info.origin.orientation.x = 0
+	map.info.origin.orientation.y = 0
+	map.info.origin.orientation.z = 0
+	map.data = []
+	for i in xrange(0, (gridTotal * 2) * (gridTotal * 2)):
+		map.data.append(-1)
+	return map
 
 def setMapValue(x, y, val):
 	if x > gridTotal or y > gridTotal or -x > gridTotal or -y > gridTotal:
@@ -95,15 +105,13 @@ def main():
 		return
 
 	for i in args:
-		i = i.split(":")
-		#tagLocations.append(i)
+		tagIDs.append(i)
 
 	rospy.init_node("buildModel")
 	tfListener = tf.TransformListener()
 	rfidSub = rospy.Subscriber("rfid/rfid_detect", String, tagCallback)
 
 	rospy.spin()
-
 	
 if __name__ == "__main__":
 	main()

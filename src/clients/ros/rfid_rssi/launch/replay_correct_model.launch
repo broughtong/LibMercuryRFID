@@ -11,7 +11,7 @@
   
   <!--  Tag position referred to map coordinates
         In this bag, tag was  300833B2DDD9014000000014 -->     
-  <node pkg="tf" type="static_transform_publisher" name="tag_broadcaster" args="-0.25 1.45 0 0 0 0 1 map tag 100" />
+  <node pkg="tf" type="static_transform_publisher" name="tag_broadcaster" args="-0.25 1.45 0 0 0 0 1 map rfid/tags/300833B2DDD901400000001 100" />
 
   <!--  Static map. Needed for amcl  -->     
   <node pkg="map_server" type="map_server" name="lcas_map" output="screen" args="$(find kompai_slam_lcas)/test/WW_GF_2015_02_22_cropped.yaml"/>
@@ -24,6 +24,9 @@
 
   <!--  Just for visualization purposes  -->     
   <!--node pkg="rviz" type="rviz" output="screen" name="rviz_node" args="-d $(find kompai_slam_lcas)/cfg/amcl.rviz"/ -->	
+
+  <!--  Start Sensor Model Node -->
+  <node pkg="rfid_rssi" type="scripts/model_test.py" name="testnode" args="300833B2DDD9014000000014" output="screen" />
   
   <!--  This generates several folders under scripts folder with models  -->     
   <!--node pkg="rfid_rssi" type="model.py" output="screen" name="modelling_node"/-->	
