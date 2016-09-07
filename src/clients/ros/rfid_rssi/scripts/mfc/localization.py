@@ -20,6 +20,7 @@ import os
 import numpy as np
 from std_msgs.msg import String
 from geometry_msgs.msg import PointStamped, PoseArray, Pose, Point, Quaternion
+from rfid_node.msg import TagReading
 
 PARTICLE_COUNT = 2000    # Total number of particles
 
@@ -135,6 +136,19 @@ class SpatioFreqModel(object):
 
                 self.va_rssi_model[:, :, findex] = data
 
+        for fileName in files:
+            if 'det' in fileName:
+                fileURIprefix = fileDIR + '/'
+                fileURI = fileURIprefix + fileName
+                data = np.loadtxt(fileURI, delimiter=',')
+
+                f = fileName[0:6]
+                findex = self.freq2cell(f)
+                for i in range(0,int(numCols)):
+                    for j in range(0,int(numRows)):
+                        if (data[i,j]==0.0):
+                            self.av_rssi_model[i, j, findex] = float('NaN')
+                            self.va_rssi_model[i, j, findex] = float('NaN')
 
 
     def buildFreqIndex(self,fileDIR,files):
@@ -147,24 +161,57 @@ class SpatioFreqModel(object):
 
     def metric2cell(self,x):
         c=int((x+(self.gridSize/2))/self.resolution)
+        if c>=math.ceil(self.gridSize / self.resolution):
+            c = math.ceil(self.gridSize / self.resolution)-1
+        if c< 0:
+            c=0
         #print "distance " + str(x) + " corresponds to cell "+str(c)
         return c
 
     def freq2cell(self,f):
-        findex = self.freqSet.index(f)
+        try:
+            findex = self.freqSet.index(f)
+        except ValueError:
+            findex =0
+            #rospy.loginfo("Frequency "+str(f)+" not in model")
         return findex
+
+    def getNearest(self,cx,cy,cf,m):
+        maxCell=math.ceil(self.gridSize / self.resolution)-1
+        for offset in range(1,maxCell):
+            for ox in range(-maxCell,maxCell):
+                for oy in range(-maxCell, maxCell):
+                    if ((cx+ox)<=maxCell) and ((cy+oy)<=maxCell) and ((cx+ox)>=0) and ((cy+oy)>=0) :
+                        if m[cx+ox,cy+oy,cf]!=float('nan'):
+                            return (cx+ox,cy+oy)
+        return 0,0
+
 
     def probability(self,rssi_db, x, y, freq_khz):
         cx= self.metric2cell(x)
         cy = self.metric2cell(y)
         cf = self.freq2cell(freq_khz)
         av_rssi = self.av_rssi_model[cx,cy,cf]
+        if av_rssi==float('nan'):
+            cx,cy=self.getNearest(cx, cy, cf, av_rssi)
+
+        av_rssi = self.av_rssi_model[cx, cy, cf]
         va_rssi = self.va_rssi_model[cx, cy, cf]
         std_rssi = math.sqrt(va_rssi)
 
-        rssi_dif=10*pow(float(rssi_db)/10) - av_rssi
+        rssi_dif=pow(10,float(rssi_db)/10) - av_rssi
 
-        prob= math.exp( - math.pow(rssi_dif,2) / (2*va_rssi)  ) / (va_rssi * math.sqrt(2*math.pi) )
+        try:
+            prob= math.exp( - math.pow(rssi_dif,2) / (2*va_rssi)  ) / (std_rssi * math.sqrt(2*math.pi) )
+        except ZeroDivisionError:
+            prob =0
+
+        if prob==float('nan'):
+            prob=0
+        else:
+            pass
+
+        return prob
 
 
 
@@ -183,6 +230,7 @@ class Particle(object):
 
 
 
+
     def __repr__(self):
         return "(%f, %f, w=%f)" % (self.x, self.y, self.w)
 
@@ -196,8 +244,11 @@ class Particle(object):
 
     @classmethod
     def create_random(cls, count, sizX,sizY):
-        rand_loc = random.uniform(0, sizX), random.uniform(0, sizY)
-        return [cls(*rand_loc) for _ in range(0, count)]
+        ans=[]
+        for _ in range(0, count):
+            rand_loc = random.uniform(0, sizX), random.uniform(0, sizY)
+            ans.append(cls(*rand_loc))
+        return ans
 
     def read_sensor(self, maze):
         """
@@ -259,8 +310,9 @@ class PartFilter():
         # todo get map dimensions
         self.mapSizeX=8
         self.mapSizeY = 8
-        self.tagID='300833B2DDD9014000000014'
-        self.tagTopicName='/rfid/rfid_detect'
+        self.tagID='390000010000000000000006'
+        #self.tagTopicName='/rfid/rfid_detect'
+        self.tagTopicName = '/lastTag'
         self.robotTFName = '/base_link'
         self.globalTFName = '/map'
         self.tl = tf.TransformListener()
@@ -268,13 +320,14 @@ class PartFilter():
 
         # initial distribution assigns each particle an equal probability
         self.particles = Particle.create_random(PARTICLE_COUNT, self.mapSizeX,self.mapSizeY)
-        self.mug = Object(self.mapSizeX,self.mapSizeY)
+        #self.mug = Object(self.mapSizeX,self.mapSizeY)
 
-        self.pose_pub = rospy.Publisher('particles', PoseArray)
+        self.pose_pub = rospy.Publisher('particles', PoseArray,queue_size=1000)
 
         #leave this for last line, otherwise it may start firing callbacks before we finish init
-        rospy.Subscriber(self.tagTopicName, String, self.tagCallback)
-
+        #rospy.Subscriber(self.tagTopicName, String, self.tagCallback)
+        rospy.Subscriber(self.tagTopicName, TagReading, self.tagCallback)
+        rospy.spin()
 
 
 
@@ -292,16 +345,32 @@ class PartFilter():
         weights = self.tagModel.probability(rssi_db, rel_pose.point.x, rel_pose.point.y, freq_khz)
         return weights
 
-    def parseTagData(self,data):
+    def parseTagData2(self,data):
         rawD = data.data
         fields = rawD.split(':')
         tid = fields[1]
         rssi_db = float(fields[2])
         phase_deg = fields[3]
         freq_khz = fields[4]
+        return (tid, rssi_db, freq_khz)
 
 
-        return (tid,rssi_db,freq_khz)
+    def parseTagData(self,data):
+        # data is a TagReading message.
+        # ID          tag EPC code
+        # txP         transmitted power from reader
+        # timestamp   reader timestamp
+        # rssi        signal strength (dBm)
+        # phase       wave phase  (degrees)
+        # frequency   wave frequency (KHz)
+
+        tid = data.ID
+        rssi_db = data.rssi
+        phase_deg = data.phase
+        freq_khz = data.frequency
+        return (tid, rssi_db, freq_khz)
+
+
 
     def publishPoses(self):
         poses = PoseArray()
@@ -352,7 +421,7 @@ class PartFilter():
                         new_particle = Particle.create_random(1, self.mapSizeX,self.mapSizeY)[0]
                     else:
                         new_particle = Particle(p.x, p.y,
-                                                heading=self.mug.h,
+                                                #heading=self.mug.h,
                                                 noisy=True)
                     new_particles.append(new_particle)
 
@@ -360,15 +429,16 @@ class PartFilter():
                 self.publishPoses()
 
                 # ---------- Move things ----------
-                old_heading = self.mug.h
-                self.mug.move() # basically add noise...
-                d_h = self.mug.h - old_heading
+                #old_heading = self.mug.h
+                #self.mug.move() # basically add noise...
+                #d_h = self.mug.h - old_heading
 
                 # Move particles according to my belief of movement (this may
                 # be different than the real movement, but it's all I got)
                 for p in self.particles:
-                    p.h += d_h  # in case robot changed heading, swirl particle heading too
-                    p.advance_by(self.mug.speed)
+                    #p.h += d_h  # in case robot changed heading, swirl particle heading too
+                    #p.advance_by(self.mug.speed)
+                    p.advance_by(0)
 
 
 

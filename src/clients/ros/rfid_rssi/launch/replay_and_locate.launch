@@ -1,0 +1,29 @@
+  <!-- 
+        Tries to locate a tag using a particle filter. 
+        Plays recorded data on alfie. We use amcl to correct odometry drifts
+  -->
+  
+<launch>  
+
+  <!--  Our bag
+        -r X refers to replay speed -->
+  <param name="use_sim_time" value="true" />  
+  <node pkg="rosbag" type="play" name="player" output="screen" args=" --clock $(find rfid_grid_map)/test/alfie_rfid_30dB_wanders_long.bag -r 1"/>
+  
+  <!--  Static map. Needed for amcl  -->     
+  <node pkg="map_server" type="map_server" name="lcas_map" output="screen" args="$(find kompai_slam_lcas)/test/WW_GF_2015_02_22_cropped.yaml"/>
+
+  <!--  AMCL with configuration for LCAS  -->     
+  <include file="$(find kompai_slam_lcas)/launch/amcl_diff.launch" />  
+  
+  <!--  Initial robot pose in this bag. Used by amcl as seed  -->     
+  <node pkg="rostopic" type="rostopic" name="arbitrary_name" args="pub /initialpose geometry_msgs/PoseWithCovarianceStamped '{ header: { frame_id: '/map' }, pose: { pose: { position: { x: 0.28, y:  -0.55 }, orientation: { x: 0.0, y: 0.0, z: 0.706, w: 0.707 } }, covariance: [ 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.06853891945200942 ] } }' -1" output="screen"/>
+
+  <!--  Just for visualization purposes  -->     
+  <!--node pkg="rviz" type="rviz" output="screen" name="rviz_node" args="-d $(find kompai_slam_lcas)/cfg/amcl.rviz"/ -->	
+
+  <!--  Particle filter Node -->
+  <!--  node pkg="rfid_rssi" type="scripts/localization.py" name="swarm"  output="screen" / -->
+  
+</launch>
+      
