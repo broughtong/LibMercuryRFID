@@ -29,32 +29,38 @@ class FreqHandler():
         rospy.Timer(rospy.Duration(60), self.save_callback)
 
     def save_callback(self,data):
-        # should be something like ./300833B2DDD9014000000004/866900
-        fileDIR='./'+self.tid
+        # In the end it should be something like ./300833B2DDD9014000000004/866900/av_rssi.csv
+
+        fileDIR='./'+self.tid+ '/' + self.f
 
         if not os.path.exists(fileDIR):
             os.makedirs(fileDIR)
 
-        fileURIprefix = fileDIR + '/' + self.f
+        fileURIprefix = fileDIR + '/'
 
-        fileURI=fileURIprefix+'_av_rssi'+'.csv'
+        fileURI=fileURIprefix+'av_rssi'+'.csv'
         x=self.av_rssi
+        x[self.detect == 0.0] = float('nan')
         np.savetxt(fileURI, x, delimiter=',',fmt='%.4e')
 
-        fileURI = fileURIprefix + '_va_rssi' + '.csv'
+        fileURI = fileURIprefix + 'va_rssi' + '.csv'
         x = self.std_rssi
+        x[self.detect == 0.0] = float('nan')
         np.savetxt(fileURI, x, delimiter=',')
 
-        fileURI = fileURIprefix + '_av_phi' + '.csv'
+        fileURI = fileURIprefix + 'av_phi' + '.csv'
         x = self.av_phi
+        x[self.detect == 0.0] = float('nan')
         np.savetxt(fileURI, x, delimiter=',')
 
-        fileURI = fileURIprefix + '_va_phi' + '.csv'
+        fileURI = fileURIprefix + 'va_phi' + '.csv'
         x = self.std_phi
+        x[self.detect == 0.0] = float('nan')
         np.savetxt(fileURI, x, delimiter=',')
 
-        fileURI = fileURIprefix + '_det' + '.csv'
+        fileURI = fileURIprefix + 'det' + '.csv'
         x = self.detect
+        x[self.detect == 0.0] = float('nan')
         np.savetxt(fileURI, x, delimiter=',')
 
 
@@ -62,6 +68,17 @@ class FreqHandler():
     def metric2cell(self,x):
         c=int((x+(self.gridSize/2))/self.resolution)
         #print "distance " + str(x) + " corresponds to cell "+str(c)
+        return c
+
+    def metric2cell(self,x):
+        c=int((x+(self.gridSize/2))/self.resolution)
+        if c>=math.ceil(self.gridSize / self.resolution):
+            rospy.logerr("Distance " + str(x) + " corresponds to inexisting cell " + str(c))
+            c = math.ceil(self.gridSize / self.resolution)-1
+        if c< 0:
+            rospy.logerr("Distance " + str(x) + " corresponds to inexisting cell " + str(c))
+            c=0
+
         return c
 
     def recursiveMean(self,xn,x,n):
@@ -84,7 +101,7 @@ class FreqHandler():
 
         cx = self.metric2cell(x)
         cy = self.metric2cell(y)
-        rssi_pot=pow(10,rssi_db/10)
+        #rssi_pot=pow(10,rssi_db/10)
         n=self.detect[cx,cy]
 
 
@@ -94,10 +111,10 @@ class FreqHandler():
         prev_std_rssi = self.std_rssi[cx, cy]
         prev_std_phi = self.std_phi[cx, cy]
 
-        new_av_rssi = self.recursiveMean(prev_av_rssi,rssi_pot,n)
+        new_av_rssi = self.recursiveMean(prev_av_rssi,rssi_db,n)
         new_av_phi  = self.recursiveMean(prev_av_phi,phase_deg,n)
 
-        new_std_rssi=self.recursiveVar(new_av_rssi,prev_av_rssi,rssi_pot,prev_std_rssi,n)
+        new_std_rssi=self.recursiveVar(new_av_rssi,prev_av_rssi,rssi_db,prev_std_rssi,n)
         new_std_phi = self.recursiveVar(new_av_phi,prev_av_phi,phase_deg,prev_std_phi,n)
 
         self.std_rssi[cx, cy] = new_std_rssi
