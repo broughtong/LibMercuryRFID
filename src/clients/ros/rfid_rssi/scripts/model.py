@@ -93,6 +93,7 @@ def tagCallback(data):
 			cellIndex = int((gridTotal * 2 * yoffset) + xoffset)
 
 			#update mean
+			oldMean = i[4][cellIndex]
 			i[4][cellIndex] = ((i[4][cellIndex] * i[3][cellIndex]) + rssi) / (i[3][cellIndex] + 1)
 			model[0][4][cellIndex] = ((model[0][4][cellIndex] * model[0][3][cellIndex]) + rssi) / (model[0][3][cellIndex] + 1)
 
@@ -101,6 +102,7 @@ def tagCallback(data):
 			model[0][3][cellIndex] = model[0][3][cellIndex] + 1
 
 			#todo: add standard dev
+			i[5][cellIndex] = recursiveVar(i[4][cellIndex], oldMean, rssi, i[5][cellIndex], i[3][cellIndex] - 1)
 
 			#good approximation for mapping rssi to 0-100 scale
 			mean = (i[4][cellIndex] * -2) - 60
@@ -111,6 +113,11 @@ def tagCallback(data):
 			
 			i[0].publish(i[2])
 			model[0][0].publish(model[0][2])
+
+def recursiveVar(xnp,xn,x,vn,n):
+        vnp= vn + pow(xn, 2) - pow(xnp, 2) \
+                   + ((pow(x, 2) - vn - pow(xn, 2)) / (n + 1))
+        return vnp
 
 def createModel(freq):
 	global model
