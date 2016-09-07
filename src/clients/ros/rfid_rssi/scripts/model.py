@@ -29,7 +29,6 @@ transmissionPower = 3000
 tagIDs = []
 tfListener = ""
 gridTotal = int(gridSize/gridResolution)
-pub = rospy.Publisher("/rfid/ocmap", OccupancyGrid, queue_size=10)
 #this paragraph is not correct
 #model, each element is a frequency model
 #each frequency model has the following format
@@ -73,20 +72,7 @@ def tagCallback(data):
 			foundFrequency = True
 
 	if foundFrequency == False:
-		map = createMap()
-		detections = []
-		mean = []
-		std = []
-
-		for i in xrange((gridTotal * 2) * (gridTotal * 2)):
-			detections.append(0)
-			mean.append(0)
-			std.append(0)
-
-		pub = rospy.Publisher("rfid/sensor_model/" + str(freq), OccupancyGrid, queue_size=10)
-
-		newFreq = [pub, freq, map, detections, mean, std]
-		model.append(newFreq)
+		createModel(freq)
 
 	for i in model:
 		if i[1] == freq:
@@ -108,18 +94,42 @@ def tagCallback(data):
 
 			#update mean
 			i[4][cellIndex] = ((i[4][cellIndex] * i[3][cellIndex]) + rssi) / (i[3][cellIndex] + 1)
+			model[0][4][cellIndex] = ((model[0][4][cellIndex] * model[0][3][cellIndex]) + rssi) / (model[0][3][cellIndex] + 1)
 
 			#Increment no of detections
 			i[3][cellIndex] = i[3][cellIndex] + 1
+			model[0][3][cellIndex] = model[0][3][cellIndex] + 1
 
 			#todo: add standard dev
 
 			#good approximation for mapping rssi to 0-100 scale
 			mean = (i[4][cellIndex] * -2) - 60
+			combinedMean = (model[0][4][cellIndex] * -2) - 60
 
 			i[2].data[cellIndex] = mean
+			model[0][2].data[cellIndex] = combinedMean
 			
 			i[0].publish(i[2])
+			model[0][0].publish(model[0][2])
+
+def createModel(freq):
+	global model
+
+	map = createMap()
+	detections = []
+	mean = []
+	std = []
+
+	for i in xrange((gridTotal * 2) * (gridTotal * 2)):
+		detections.append(0)
+		mean.append(0)
+		std.append(0)
+
+	pub = rospy.Publisher("rfid/sensor_model/" + str(freq), OccupancyGrid, queue_size=10)
+
+	newFreq = [pub, freq, map, detections, mean, std]
+	model.append(newFreq)
+
 
 #def setMapValue(x, y, val):
 #	if x > gridTotal or y > gridTotal or -x > gridTotal or -y > gridTotal:
@@ -162,14 +172,17 @@ def main():
 		print "Error: No tags to build model from"
 		return
 
-	for i in args:
-		tagIDs.append(i)
-
 	fname = "models/" + str(transmissionPower) + ".p"
 
-	#uncomment to load existing map on start
-	#if os.path.isfile(fname):
-	#	model = pickle.load(open(fname, "rb"))
+	if "-a" in args:
+		if os.path.isfile(fname):
+			model = pickle.load(open(fname, "rb"))
+		args = args.remove("-a")
+	else:
+		createModel("combined")
+
+	for i in args:			
+		tagIDs.append(i)
 
 	rospy.init_node("buildModel")
 	tfListener = tf.TransformListener()

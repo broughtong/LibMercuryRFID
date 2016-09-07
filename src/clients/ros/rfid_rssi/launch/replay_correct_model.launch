@@ -7,11 +7,14 @@
   <!--  Our bag
         -r X refers to replay speed -->
   <param name="use_sim_time" value="true" />
-  <node pkg="rosbag" type="play" name="player" output="screen" args=" --clock $(find rfid_rssi)/bags/long.bag -r 5.0"/>	
+  <node pkg="rosbag" type="play" name="player" output="screen" args=" --clock $(find rfid_rssi)/bags/long.bag -r 12.0"/>	
   
   <!--  Tag position referred to map coordinates
         In this bag, tag was  300833B2DDD9014000000014 -->     
-  <node pkg="tf" type="static_transform_publisher" name="tag_broadcaster" args="-0.25 1.45 0 0 0 0 1 map rfid/tags/300833B2DDD9014000000014 100" />
+  <node pkg="tf" type="static_transform_publisher" name="tag_broadcaster" args="2.816 -0.637 0 0 0 0 1 map rfid/tags/300833B2DDD9014000000007 100" />
+  <node pkg="tf" type="static_transform_publisher" name="tag_broadcaster" args="1.477 5.282 0 0 0 0 1 map rfid/tags/300833B2DDD9014000000009 100" />
+  <node pkg="tf" type="static_transform_publisher" name="tag_broadcaster" args="3.82 -1.24 0 0 0 0 1 map rfid/tags/300833B2DDD9014000000011 100" />
+  <node pkg="tf" type="static_transform_publisher" name="tag_broadcaster" args="-0.338 1.635 0 0 0 0 1 map rfid/tags/300833B2DDD9014000000014 100" />
 
   <!--  Static map. Needed for amcl  -->     
   <node pkg="map_server" type="map_server" name="lcas_map" output="screen" args="$(find kompai_slam_lcas)/test/WW_GF_2015_02_22_cropped.yaml"/>
