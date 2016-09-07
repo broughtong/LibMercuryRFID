@@ -21,8 +21,8 @@ from math import *
 #Configurables - distances in meters
 #gridSize = distance from robot to edge of map in all directions
 #gridResolution = the cell size of the map
-gridSize = 8
-gridResolution = 0.5
+gridSize = 9
+gridResolution = 0.3
 transmissionPower = 3000
 
 #globals
@@ -130,19 +130,6 @@ def createModel(freq):
 	newFreq = [pub, freq, map, detections, mean, std]
 	model.append(newFreq)
 
-
-#def setMapValue(x, y, val):
-#	if x > gridTotal or y > gridTotal or -x > gridTotal or -y > gridTotal:
-#		return
-#	else:
-#		yoffset = ((y - (y % gridResolution)) + gridSize) / gridResolution
-#		xoffset = ((x - (x % gridResolution)) + gridSize) / gridResolution
-#		index = int((gridTotal * 2 * yoffset) + xoffset)
-#
-#		if map.data[index] == -1:
-#			map.data[index] = val
-#		else:
-#			map.data[index] = (map.data[index] + val) / 2
 def createMap():
 	map = OccupancyGrid()
 	map.header.frame_id = "/base_link"
@@ -161,6 +148,26 @@ def createMap():
 		map.data.append(-1)
 	return map
 
+def recoverModel():
+
+	fname = "models/" + str(transmissionPower) + ".p"
+
+	if os.path.isfile(fname):
+		model = pickle.load(open(fname, "rb"))
+
+	for i in model:
+ 			
+		i[0] = rospy.Publisher("rfid/sensor_model/" + str(freq), OccupancyGrid, queue_size=10)
+
+def dumpModel():
+
+	fname = "models/" + str(transmissionPower) + ".p"
+
+	for i in model:
+		i[0] = ""
+
+	pickle.dump(model, open(fname, "wb"))
+
 def main():
 
 	global tfListener, model
@@ -172,11 +179,9 @@ def main():
 		print "Error: No tags to build model from"
 		return
 
-	fname = "models/" + str(transmissionPower) + ".p"
-
+	
 	if "-a" in args:
-		if os.path.isfile(fname):
-			model = pickle.load(open(fname, "rb"))
+		recoverModel()
 		args = args.remove("-a")
 	else:
 		createModel("combined")
@@ -190,7 +195,7 @@ def main():
 
 	rospy.spin()
 
-	pickle.dump(model, open(fname, "wb"))
-	
+	dumpModel()
+
 if __name__ == "__main__":
 	main()
