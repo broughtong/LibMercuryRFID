@@ -19,3 +19,8 @@ build/
 /.idea/modules.xml
 /.idea/vcs.xml
 /.idea/workspace.xml
+/src/clients/ros/rfid_node/.idea/encodings.xml
+/src/clients/ros/rfid_node/.idea/misc.xml
+/src/clients/ros/rfid_node/.idea/modules.xml
+/src/clients/ros/rfid_node/.idea/rfid_node.iml
+/src/clients/ros/rfid_node/.idea/workspace.xml
