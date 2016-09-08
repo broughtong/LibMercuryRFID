@@ -11,6 +11,7 @@
 
 from __future__ import absolute_import
 
+import pickle
 import random
 import math
 import bisect
@@ -97,72 +98,17 @@ class SpatioFreqModel(object):
 
     def __init__(self):
         tid = '300833B2DDD9014000000014'
-        self.resolution = 0.3
-        self.gridSize = 8
+        self.gridResolution = 0.3
+        self.gridSize = 9
 
-
-
-        # should be something like ./300833B2DDD9014000000004/866900
-        fileDIR = './' + tid
-        files = os.listdir(fileDIR)
-        self.buildFreqIndex(fileDIR,files)
-
-        numCols = math.ceil(self.gridSize / self.resolution)
-        numRows = math.ceil(self.gridSize / self.resolution)
-        numFreqs = len(self.freqSet)
-
-        self.av_rssi_model = np.zeros((numCols, numRows, numFreqs))
-        self.va_rssi_model = np.zeros((numCols, numRows, numFreqs))
-
-        for fileName in files:
-            if 'av_rssi' in fileName:
-                fileURIprefix = fileDIR + '/'
-                fileURI = fileURIprefix + fileName
-                data = np.loadtxt(fileURI, delimiter=',')
-
-                f = fileName[0:6]
-                findex = self.freq2cell(f)
-
-                self.av_rssi_model[:, :, findex] = data
-                doPrint = True
-
-            if 'va_rssi' in fileName:
-                fileURIprefix = fileDIR + '/'
-                fileURI = fileURIprefix + fileName
-                data = np.loadtxt(fileURI, delimiter=',')
-
-                f = fileName[0:6]
-                findex = self.freq2cell(f)
-
-                self.va_rssi_model[:, :, findex] = data
-
-        for fileName in files:
-            if 'det' in fileName:
-                fileURIprefix = fileDIR + '/'
-                fileURI = fileURIprefix + fileName
-                data = np.loadtxt(fileURI, delimiter=',')
-
-                f = fileName[0:6]
-                findex = self.freq2cell(f)
-                for i in range(0,int(numCols)):
-                    for j in range(0,int(numRows)):
-                        if (data[i,j]==0.0):
-                            self.av_rssi_model[i, j, findex] = float('NaN')
-                            self.va_rssi_model[i, j, findex] = float('NaN')
-
-
-    def buildFreqIndex(self,fileDIR,files):
-        self.freqSet = list()
-        for fileName in files:
-            f = (fileName[0:6])
-            if f not in self.freqSet:
-                self.freqSet.append(f)
-        self.freqSet.sort()
+	self.model = pickle.load(open("models/3000.p", "rb"))
+	
+        numFreqs = len(self.model) - 1
 
     def metric2cell(self,x):
-        c=int((x+(self.gridSize/2))/self.resolution)
-        if c>=math.ceil(self.gridSize / self.resolution):
-            c = math.ceil(self.gridSize / self.resolution)-1
+        c=int((x+(self.gridSize/2))/self.gridResolution)
+        if c>=math.ceil(self.gridSize / self.gridResolution):
+            c = math.ceil(self.gridSize / self.gridResolution)-1
         if c< 0:
             c=0
         #print "distance " + str(x) + " corresponds to cell "+str(c)
@@ -170,7 +116,7 @@ class SpatioFreqModel(object):
 
     def freq2cell(self,f):
         try:
-            findex = self.freqSet.index(f)
+            findex = self.freqSet.index(f)###############################
         except ValueError:
             findex =0
             #rospy.loginfo("Frequency "+str(f)+" not in model")
@@ -189,21 +135,31 @@ class SpatioFreqModel(object):
 
     def probability(self,rssi_db, x, y, freq_khz):
 	#copmputes probability
-        cx= self.metric2cell(x)
-        cy = self.metric2cell(y)
-        cf = self.freq2cell(freq_khz)
-        av_rssi = self.av_rssi_model[cx,cy,cf]
-        if av_rssi==float('nan'):
-            cx,cy=self.getNearest(cx, cy, cf, av_rssi)
 
-        av_rssi = self.av_rssi_model[cx, cy, cf]
-        va_rssi = self.va_rssi_model[cx, cy, cf]
-        std_rssi = math.sqrt(va_rssi)
+	if x > gridTotal or y > gridTotal or -x > gridTotal or -y > gridTotal:
+		return
+
+	yoffset = ((y - (y % gridResolution)) + gridSize) / gridResolution
+	xoffset = ((x - (x % gridResolution)) + gridSize) / gridResolution
+	index = int((gridTotal * 2 * yoffset) + xoffset)
+	
+	for i in self.model:
+		if i[1] == freq_khz:
+			if i[4][index] == 0:
+				if self.model[0][4][index] == 0:
+					av_rssi = 100
+					std_rssi = 0
+				else:
+					av_rssi = self.model[0][4][index]
+					std_rssi = self.model[0][5][index]
+			else:
+				av_rssi = i[4][index]
+				std_rssi = i[5][index]
 
         rssi_dif=pow(10,float(rssi_db)/10) - av_rssi
 
         try:
-            prob= math.exp( - math.pow(rssi_dif,2) / (2*va_rssi)  ) / (std_rssi * math.sqrt(2*math.pi) )
+            prob= math.exp( - math.pow(rssi_dif,2) / (2*std_rssi*std_rssi)  ) / (std_rssi * math.sqrt(2*math.pi) )
         except ZeroDivisionError:
             prob =0
 
@@ -228,9 +184,6 @@ class Particle(object):
         self.y = y
         self.h = heading
         self.w = w
-
-
-
 
     def __repr__(self):
         return "(%f, %f, w=%f)" % (self.x, self.y, self.w)
@@ -277,7 +230,7 @@ class Particle(object):
 
 # ------------------------------------------------------------------------
 class Object(Particle):
-    speed = 0.0 # objects are *usually* statice
+    speed = 0.0 # objects are *usually* static
 
     def __init__(self, sizeX,sizeY):
         rand_loc = random.uniform(0, sizeX), random.uniform(0, sizeY)
@@ -309,9 +262,9 @@ class PartFilter():
     # Must have __init__(self) function for a class, similar to a C++ class constructor.
     def __init__(self):
         # todo get map dimensions
-        self.mapSizeX=8
-        self.mapSizeY = 8
-        self.tagID='390000010000000000000006'
+        self.mapSizeX=9
+        self.mapSizeY = 9
+        self.tagID='300833B2DDD9014000000014'
         #self.tagTopicName='/rfid/rfid_detect'
         self.tagTopicName = '/lastTag'
         self.robotTFName = '/base_link'
