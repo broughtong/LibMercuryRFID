@@ -48,8 +48,7 @@ def tagCallback(data):
 
 	if not tagID in tagIDs:
 		return
-	
-	if not tfListener.frameExists("/base_link"):
+ 	if not tfListener.frameExists("/base_link"):
 		print "Unable to find tf frame for base link"
 		return
 	if not tfListener.frameExists("/map"):
@@ -102,7 +101,8 @@ def tagCallback(data):
 			model[0][3][cellIndex] = model[0][3][cellIndex] + 1
 
 			#todo: add standard dev
-			i[5][cellIndex] = recursiveVar(i[4][cellIndex], oldMean, rssi, i[5][cellIndex], i[3][cellIndex] - 1)
+			i[5][cellIndex] = sqrt(recursiveVar(i[4][cellIndex], oldMean, rssi, i[5][cellIndex], i[3][cellIndex] - 1))
+			model[0][5][cellIndex] = sqrt(recursiveVar(model[0][4][cellIndex], oldMean, rssi, model[0][5][cellIndex], model[0][3][cellIndex] - 1))
 
 			#good approximation for mapping rssi to 0-100 scale
 			mean = (i[4][cellIndex] * -2) - 60
@@ -115,8 +115,14 @@ def tagCallback(data):
 			model[0][0].publish(model[0][2])
 
 def recursiveVar(xnp,xn,x,vn,n):
-        vnp= vn + pow(xn, 2) - pow(xnp, 2) \
-                   + ((pow(x, 2) - vn - pow(xn, 2)) / (n + 1))
+	xnp = int(xnp)
+	xn = int(xn)
+	x = int(x)
+	vn = int(vn)
+	n = int(n)
+	print xnp, xn, x, vn, n
+        vnp= vn + pow(xn, 2) - pow(xnp, 2) + ((pow(x, 2) - vn - pow(xn, 2)) / (n + 1))
+	#print vnp
         return vnp
 
 def createModel(freq):
