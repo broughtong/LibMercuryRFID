@@ -1,0 +1,60 @@
+mapName: LCAS Lab
+Regions:
+  - name: kitchen
+    min:
+      x: 0
+      y: 0
+    max:
+      x: 1
+      y: 1
+    subregions:
+      - name: kitchen fridge
+        min:
+          x: 0
+          y: 0
+        max:
+          x: 1
+          y: 0.5
+      - name: kitchen cook
+        min:
+          x: 0
+          y: 0.5
+        max:
+          x: 1
+          y: 1
+  - name: living
+    min:
+      x: 0
+      y: 1
+    max:
+      x: 1
+      y: 2
+    subregions:
+      - name: living coach
+        min:
+          x: 0
+          y: 1
+        max:
+          x: 1
+          y: 1.5
+      - name: living table
+        min:
+          x: 0
+          y: 1.5
+        max:
+          x: 1
+          y: 2
+  - name: bathroom
+    min:
+      x: 1
+      y: 0
+    max:
+      x: 2
+      y: 1
+  - name: bedroom
+    min:
+      x: 1
+      y: 0
+    max:
+      x: 2
+      y: 1
