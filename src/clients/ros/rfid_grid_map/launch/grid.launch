@@ -5,6 +5,7 @@
     
   <arg name="tagID" default="390000010000000000000007"/>
   <arg name="object" default="kitchen table"/>
+  <arg name="regions_file" default="$(find rfid_grid_map)/config/LCAS.yaml"/>
 
   <group ns="grid_$(arg tagID)">
   <!-- Launch rfid_grid_map: locate objects -->
@@ -18,7 +19,7 @@
       <rosparam param="orig_x">0</rosparam>        
       <rosparam param="orig_y">7</rosparam>       
       <rosparam param="map_resolution">0.3</rosparam>        
-      <rosparam param="regions_file" subst_value="True">$(find rfid_grid_map)/config/LCAS.yaml</rosparam>
+      <rosparam param="regions_file" subst_value="True">"$(arg regions_file)"</rosparam>
   </node>
       
   <!-- Launch the grid map visualizer -->
