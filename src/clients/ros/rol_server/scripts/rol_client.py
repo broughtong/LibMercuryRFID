@@ -2,7 +2,8 @@
 
 import rospy
 from std_msgs.msg import String
-from rol_server.srv import findObject, findObjectRequest, findObjectResponse
+#from rol_server.srv import findObject, findObjectRequest, findObjectResponse
+from hmi_bridge.srv import findObject, findObjectRequest, findObjectResponse
 
 
 

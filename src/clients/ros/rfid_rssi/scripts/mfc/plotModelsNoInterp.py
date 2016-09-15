@@ -200,7 +200,7 @@ if __name__ == '__main__':
 
     maxR=5.5
     maxT = 150
-
+    save=False
 
     printSet= modelList[:-1:3]
     printSet.append(modelList[-2])
@@ -213,19 +213,21 @@ if __name__ == '__main__':
         allData.append(m[4])
         i = i + 1
 
-    for m in modelList[:-1:]:
-        figt, axt = plt.subplots(nrows=1, ncols=1)
-        fig2t, ax2t = plt.subplots(nrows=1, ncols=1)
-        (cft,f)  = plotAModelCart( m, axt,  X, Y, True, minX, maxX, minY, maxY, '')
-        (cf2t,f) = plotAModelPolar(m, ax2t, R, T, True, maxR, maxT, '')
+    if 0:
+        for m in modelList[:-1:]:
+            figt, axt = plt.subplots(nrows=1, ncols=1)
+            fig2t, ax2t = plt.subplots(nrows=1, ncols=1)
+            (cft,f)  = plotAModelCart( m, axt,  X, Y, True, minX, maxX, minY, maxY, '')
+            (cf2t,f) = plotAModelPolar(m, ax2t, R, T, True, maxR, maxT, '')
 
-        pdf = PdfPages('./figures/AvRSSI_cart_'+str(f)+'.pdf')
-        pdf.savefig(figt)
-        pdf.close()
+            if save:
+                pdf = PdfPages('./figures/AvRSSI_cart_'+str(f)+'.pdf')
+                pdf.savefig(figt)
+                pdf.close()
 
-        pdf = PdfPages('./figures/AvRSSI_pol_'+str(f)+'.pdf')
-        pdf.savefig(fig2t)
-        pdf.close()
+                pdf = PdfPages('./figures/AvRSSI_pol_'+str(f)+'.pdf')
+                pdf.savefig(fig2t)
+                pdf.close()
 
 
     #
@@ -261,24 +263,27 @@ if __name__ == '__main__':
     fig2a.colorbar(cf2a, cax=cbar_ax2a,label='decibels')
 
     # /////////////////////////////////////////////
-    #plt.show()
+
+    if not save:
+        plt.show()
 
     #/////////////////////////////////////////////
-    pdf=PdfPages('./figures/AvRSSI_cart_map.pdf')
-    pdf.savefig(fig)
-    pdf.close()
+    if save:
+        pdf=PdfPages('./figures/AvRSSI_cart_map.pdf')
+        pdf.savefig(fig)
+        pdf.close()
 
-    pdf=PdfPages('./figures/AvRSSI_pol_map.pdf')
-    pdf.savefig(fig2)
-    pdf.close()
+        pdf=PdfPages('./figures/AvRSSI_pol_map.pdf')
+        pdf.savefig(fig2)
+        pdf.close()
 
-    pdf = PdfPages('./figures/AvRSSI_cart_AllF.pdf')
-    pdf.savefig(figa)
-    pdf.close()
+        pdf = PdfPages('./figures/AvRSSI_cart_AllF.pdf')
+        pdf.savefig(figa)
+        pdf.close()
 
-    pdf = PdfPages('./figures/AvRSSI_pol_AllF.pdf')
-    pdf.savefig(fig2a)
-    pdf.close()
+        pdf = PdfPages('./figures/AvRSSI_pol_AllF.pdf')
+        pdf.savefig(fig2a)
+        pdf.close()
 
 
 
