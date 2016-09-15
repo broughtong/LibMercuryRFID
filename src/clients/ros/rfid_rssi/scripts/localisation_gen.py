@@ -1,3 +1,5 @@
+
+
 #!/usr/bin/env python
 
 
@@ -11,6 +13,7 @@
 
 from __future__ import absolute_import
 
+import time
 import pickle
 import random
 import math
@@ -19,12 +22,18 @@ import rospy
 import tf
 import os
 import numpy as np
+from math import *
 from std_msgs.msg import String
 from geometry_msgs.msg import PointStamped, PoseArray, Pose, Point, Quaternion
-from rfid_node.msg import TagReading
+#from rfid_node.msg import TagReading
 
-PARTICLE_COUNT = 2000    # Total number of particles
+PARTICLE_COUNT = 500    # Total number of particles
 
+
+positives = 0
+negatives = 0
+cumulative = 0
+distances = []
 
 # ------------------------------------------------------------------------
 # Some utility functions
@@ -71,7 +80,7 @@ def compute_mean_point(particles):
         if distance(p.x, p.y, m_x, m_y) < 1:
             m_count += 1
 
-    return m_x, m_y, m_count > PARTICLE_COUNT * 0.95
+    return m_x, m_y, m_count > PARTICLE_COUNT * 0.999
 
 # ------------------------------------------------------------------------
 class WeightedDistribution(object):
@@ -136,16 +145,25 @@ class SpatioFreqModel(object):
     def probability(self,rssi_db, x, y, freq_khz):
 	#copmputes probability
 
+	gridTotal = self.gridSize * 2
+
 	if x > gridTotal or y > gridTotal or -x > gridTotal or -y > gridTotal:
 		return
 
-	yoffset = ((y - (y % gridResolution)) + gridSize) / gridResolution
-	xoffset = ((x - (x % gridResolution)) + gridSize) / gridResolution
+	yoffset = ((y - (y % self.gridResolution)) + self.gridSize) / self.gridResolution
+	xoffset = ((x - (x % self.gridResolution)) + self.gridSize) / self.gridResolution
 	index = int((gridTotal * 2 * yoffset) + xoffset)
 	
 	for i in self.model:
 		if i[1] == freq_khz:
-			if i[4][index] == 0:
+
+			if self.model[0][4][index] == 0:
+				av_rssi = 999
+				std_rssi = 0
+			else:
+				av_rssi = self.model[0][4][index]
+				std_rssi = self.model[0][5][index]
+			"""if i[4][index] == 0:
 				if self.model[0][4][index] == 0:
 					av_rssi = 100
 					std_rssi = 0
@@ -155,7 +173,7 @@ class SpatioFreqModel(object):
 			else:
 				av_rssi = i[4][index]
 				std_rssi = i[5][index]
-
+"""
         rssi_dif=pow(10,float(rssi_db)/10) - av_rssi
 
         try:
@@ -200,7 +218,7 @@ class Particle(object):
     def create_random(cls, count, sizX,sizY):
         ans=[]
         for _ in range(0, count):
-            rand_loc = random.uniform(0, sizX), random.uniform(0, sizY)
+            rand_loc = random.uniform(-1, sizX-1), random.uniform(-.5, sizY-.5)
             ans.append(cls(*rand_loc))
         return ans
 
@@ -262,11 +280,11 @@ class PartFilter():
     # Must have __init__(self) function for a class, similar to a C++ class constructor.
     def __init__(self):
         # todo get map dimensions
-        self.mapSizeX=9
-        self.mapSizeY = 9
+        self.mapSizeX = 5
+        self.mapSizeY = 3.5
         self.tagID='300833B2DDD9014000000014'
-        #self.tagTopicName='/rfid/rfid_detect'
-        self.tagTopicName = '/lastTag'
+        self.tagTopicName='/rfid/rfid_detect'
+        #self.tagTopicName = '/lastTag'
         self.robotTFName = '/base_link'
         self.globalTFName = '/map'
         self.tl = tf.TransformListener()
@@ -276,11 +294,11 @@ class PartFilter():
         self.particles = Particle.create_random(PARTICLE_COUNT, self.mapSizeX,self.mapSizeY)
         #self.mug = Object(self.mapSizeX,self.mapSizeY)
 
-        self.pose_pub = rospy.Publisher('particles', PoseArray,queue_size=1000)
+        self.pose_pub = rospy.Publisher('rfid/particles_g', PoseArray,queue_size=1000)
 
         #leave this for last line, otherwise it may start firing callbacks before we finish init
-        #rospy.Subscriber(self.tagTopicName, String, self.tagCallback)
-        rospy.Subscriber(self.tagTopicName, TagReading, self.tagCallback)
+        rospy.Subscriber(self.tagTopicName, String, self.tagCallback)
+        #rospy.Subscriber(self.tagTopicName, TagReading, self.tagCallback)
         rospy.spin()
 
 
@@ -299,7 +317,7 @@ class PartFilter():
         weights = self.tagModel.probability(rssi_db, rel_pose.point.x, rel_pose.point.y, freq_khz)
         return weights
 
-    def parseTagData2(self,data):
+    def parseTagData(self,data):
         rawD = data.data
         fields = rawD.split(':')
         tid = fields[1]
@@ -309,7 +327,7 @@ class PartFilter():
         return (tid, rssi_db, freq_khz)
 
 
-    def parseTagData(self,data):
+    def parseTagData2(self,data):
         # data is a TagReading message.
         # ID          tag EPC code
         # txP         transmitted power from reader
@@ -339,15 +357,25 @@ class PartFilter():
 
         self.pose_pub.publish(poses)
 
+    def getRobotPose(self):
+	now = rospy.Time(0)
+	self.tl.waitForTransform("map", "base_link", now, rospy.Duration(4.0))
+	r_pos, r_quat = self.tl.lookupTransform("/map", "/base_link", now)
+	return r_pos
 
     def tagCallback(self,data):
+	    global positives, negatives, cumulative, distances
             # Sensor data
             (id,rssi_db,freq_khz)= self.parseTagData(data)
 
 
             if id == self.tagID:
+
                 # get robot position
-                #(rob_x, rob_y, rob_yaw)=self.getLatestRobotPose()
+                (rob_x, rob_y, rob_yaw)=self.getRobotPose()
+		dx = rob_x - -0.3
+		dy = rob_y - 1.5
+		distanceToTag = sqrt((dx * dx) + (dy * dy))
 
                 # sensor reading
                 for p in self.particles:
@@ -362,7 +390,7 @@ class PartFilter():
 
                 # Normalise weights
                 nu = sum(p.w for p in self.particles)
-                if nu:
+		if nu:
                     for p in self.particles:
                         p.w = p.w / nu
 
@@ -374,12 +402,24 @@ class PartFilter():
                     if p is None:  # No pick b/c all totally improbable
                         new_particle = Particle.create_random(1, self.mapSizeX,self.mapSizeY)[0]
                     else:
+			deltax = p.x - -0.3
+			deltay = p.y - 1.5
+			tagToEst = sqrt((deltax * deltax) + (deltay * deltay))
+			cumulative += tagToEst
+			if p.y > 0.5 and p.y < 2.5 and p.x < 0.7 and p.x > -1.3:
+				print "S", p.x, p.y
+				positives += 1
+			else:
+				print "F", p.x, p.y
+				negatives += 1                 
+			print "##S: " + str(positives) + " F: " + str(negatives) + " %: " + str((float(positives) / (positives + negatives)) * 100) + " C: " + str(cumulative)
+			distances.append((distanceToTag, tagToEst))
                         new_particle = Particle(p.x, p.y,
                                                 #heading=self.mug.h,
                                                 noisy=True)
                     new_particles.append(new_particle)
 
-                particles = new_particles
+                self.particles = new_particles
                 self.publishPoses()
 
                 # ---------- Move things ----------
@@ -387,7 +427,7 @@ class PartFilter():
                 #self.mug.move() # basically add noise...
                 #d_h = self.mug.h - old_heading
 
-                # Move particles according to my belief of movement (this may
+                 # Move particles according to my belief of movement (this may
                 # be different than the real movement, but it's all I got)
                 for p in self.particles:
                     #p.h += d_h  # in case robot changed heading, swirl particle heading too
@@ -412,4 +452,13 @@ if __name__ == '__main__':
     except rospy.ROSInterruptException:
         pass
 
+    print "##################################"
+    print "Finished test"
+    print "Cumulative distance to target: " + str(cumulative)
+    print "Success: " + str(positives)
+    print "Failure: " + str(negatives)
+    print "%:       " + str((float(positives) / (positives + negatives)) * 100)
 
+    with(open("distances_g", "w")) as f:
+	for i in distances:
+		f.write(str(i[0]) + "," + str(i[1]) + "\n")

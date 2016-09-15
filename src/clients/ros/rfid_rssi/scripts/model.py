@@ -29,12 +29,10 @@ transmissionPower = 3000
 tagIDs = []
 tfListener = ""
 gridTotal = int(gridSize/gridResolution)
-#this paragraph is not correct
 #model, each element is a frequency model
 #each frequency model has the following format
-#[frequency(kHz), 2d occupancy grid]
-#each grid cell contains
-#[no of detections, mean rssi, sd rssi]
+#[ROS publisher, frequency(kHz), 2D ROS occupancy grid,
+#detections, mean, standard deviation]
 model = []
 
 def tagCallback(data):
@@ -91,39 +89,71 @@ def tagCallback(data):
 			xoffset = ((x - (x % gridResolution)) + gridSize) / gridResolution
 			cellIndex = int((gridTotal * 2 * yoffset) + xoffset)
 
+			#update freq-specific model
+
+			n = i[3][cellIndex]
+			mean = i[4][cellIndex]
+			sd = i[5][cellIndex]
+
+			n, mean, m2 = recursiveVar(rssi, n, mean, sd * sd)
+
+			i[3][cellIndex] = n
+			i[4][cellIndex] = mean
+			i[5][cellIndex] = sqrt(m2)
+
+			#update combined model
+
+			n = model[0][3][cellIndex]
+			mean = model[0][4][cellIndex]
+			sd = model[0][5][cellIndex]
+
+			n, mean, m2 = recursiveVar(rssi, n, mean, sd * sd)
+
+			model[0][3][cellIndex] = n
+			model[0][4][cellIndex] = mean
+			model[0][5][cellIndex] = sqrt(m2)
+
 			#update mean
-			oldMean = i[4][cellIndex]
-			i[4][cellIndex] = ((i[4][cellIndex] * i[3][cellIndex]) + rssi) / (i[3][cellIndex] + 1)
-			model[0][4][cellIndex] = ((model[0][4][cellIndex] * model[0][3][cellIndex]) + rssi) / (model[0][3][cellIndex] + 1)
+			#oldMean = i[4][cellIndex]
+			#i[4][cellIndex] = ((i[4][cellIndex] * i[3][cellIndex]) + rssi) / (i[3][cellIndex] + 1)
+			#model[0][4][cellIndex] = ((model[0][4][cellIndex] * model[0][3][cellIndex]) + rssi) / (model[0][3][cellIndex] + 1)
 
 			#Increment no of detections
-			i[3][cellIndex] = i[3][cellIndex] + 1
-			model[0][3][cellIndex] = model[0][3][cellIndex] + 1
+			#i[3][cellIndex] = i[3][cellIndex] + 1
+			#model[0][3][cellIndex] = model[0][3][cellIndex] + 1
 
 			#todo: add standard dev
-			i[5][cellIndex] = sqrt(recursiveVar(i[4][cellIndex], oldMean, rssi, i[5][cellIndex], i[3][cellIndex] - 1))
-			model[0][5][cellIndex] = sqrt(recursiveVar(model[0][4][cellIndex], oldMean, rssi, model[0][5][cellIndex], model[0][3][cellIndex] - 1))
+			#i[5][cellIndex] = sqrt(recursiveVar(i[4][cellIndex], oldMean, rssi, i[5][cellIndex], i[3][cellIndex] - 1))
+			#model[0][5][cellIndex] = sqrt(recursiveVar(model[0][4][cellIndex], oldMean, rssi, model[0][5][cellIndex], model[0][3][cellIndex] - 1))
 
 			#good approximation for mapping rssi to 0-100 scale
-			mean = (i[4][cellIndex] * -2) - 60
-			combinedMean = (model[0][4][cellIndex] * -2) - 60
+			display_mean = (i[4][cellIndex] * -2) - 60
+			display_combinedMean = (model[0][4][cellIndex] * -2) - 60
 
-			i[2].data[cellIndex] = mean
-			model[0][2].data[cellIndex] = combinedMean
+			i[2].data[cellIndex] = display_mean
+			model[0][2].data[cellIndex] = display_combinedMean
 			
 			i[0].publish(i[2])
 			model[0][0].publish(model[0][2])
 
-def recursiveVar(xnp,xn,x,vn,n):
-	xnp = int(xnp)
-	xn = int(xn)
-	x = int(x)
-	vn = int(vn)
-	n = int(n)
-	print xnp, xn, x, vn, n
-        vnp= vn + pow(xn, 2) - pow(xnp, 2) + ((pow(x, 2) - vn - pow(xn, 2)) / (n + 1))
-	#print vnp
-        return vnp
+#def recursiveVar(xnp,xn,x,vn,n):
+#	xnp = int(xnp)
+#	xn = int(xn)
+#	x = int(x)
+#	vn = int(vn)
+#	n = int(n)
+#	print xnp, xn, x, vn, n
+#       vnp= vn + pow(xn, 2) - pow(xnp, 2) + ((pow(x, 2) - vn - pow(xn, 2)) / (n + 1))
+#	#print vnp
+#       return vnp
+
+def recursiveVar(val, n, mean, m2):
+	n += 1
+	delta = val - mean
+	mean += delta/n
+	m2 += delta * (val - mean)
+
+	return n, mean, m2
 
 def createModel(freq):
 	global model
@@ -135,8 +165,8 @@ def createModel(freq):
 
 	for i in xrange((gridTotal * 2) * (gridTotal * 2)):
 		detections.append(0)
-		mean.append(0)
-		std.append(0)
+		mean.append(0.0)
+		std.append(0.0)
 
 	pub = rospy.Publisher("rfid/sensor_model/" + str(freq), OccupancyGrid, queue_size=10)
 
