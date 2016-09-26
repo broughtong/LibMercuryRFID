@@ -7,7 +7,7 @@
   <!--  Our bag
         -r X refers to replay speed -->
   <param name="use_sim_time" value="true" />
-  <node pkg="rosbag" type="play" name="player" output="screen" args=" --clock /home/george/modelling/bags/filter_big.bag -r 15.0"/>	
+  <node pkg="rosbag" type="play" name="player" output="screen" args=" --clock /home/george/modelling/bags/filter_big.bag -r 2.5"/>	
   
   <!--  Tag position referred to map coordinates
         In this bag, tag was  300833B2DDD9014000000014 -->     

@@ -33,21 +33,139 @@ transmissionPower = 3000
 tagIDs = []
 tfListener = ""
 gridTotal = int(gridSize/gridResolution)
-#this paragraph is not correct
 #model, each element is a frequency model
 #each frequency model has the following format
-#[frequency(kHz), 2d occupancy grid]
-#each grid cell contains
-#[no of detections, mean rssi, sd rssi]
+#[ROS publisher, frequency(kHz), 2D ROS occupancy grid,
+#detections, mean, standard deviation]
 model = []
 
 
+<<<<<<< HEAD
+	data = str(data)
+	data = data.split(":")
+	tagID = data[2]
+	freq = data[5]
+	rssi = int(data[3])
+	tx = 3000
+
+	if not tagID in tagIDs:
+		return
+ 	if not tfListener.frameExists("/base_link"):
+		print "Unable to find tf frame for base link"
+		return
+	if not tfListener.frameExists("/map"):
+		print "Unable to find tf frame for map"
+		return
+	if not tfListener.frameExists("/rfid/tags/" + tagID):
+		print "Unable to find tf frame for rfid tag: " + tagIDs[0]
+		return
+
+	now = rospy.Time(0)
+	tfListener.waitForTransform("map", "base_link", now, rospy.Duration(4.0))
+	r_pos, r_quat = tfListener.lookupTransform("/map", "/base_link", now)
+	tfListener.waitForTransform("map", "rfid/tags/" + tagID, now, rospy.Duration(4.0))
+	t_pos, t_quat = tfListener.lookupTransform("/map", "/rfid/tags/" + tagID, now)
+
+	foundFrequency = False
+
+	for i in model:
+		if i[1] == freq:
+			foundFrequency = True
+
+	if foundFrequency == False:
+		createModel(freq)
+
+	for i in model:
+		if i[1] == freq:
+			roll, pitch, yaw = tf.transformations.euler_from_quaternion([r_quat[0], r_quat[1], r_quat[2], r_quat[3]])
+
+			xt = t_pos[0] - r_pos[0]
+			yt = t_pos[1] - r_pos[1]
+			x = xt * cos(-yaw) - yt * sin(-yaw)
+			y = xt * sin(-yaw) + yt * cos(-yaw)
+			z = 0
+
+			if x > gridTotal or y > gridTotal or -x > gridTotal or -y > gridTotal:
+				print "Warning: Tag detected beyond the range of the model being created"
+				return
+
+			yoffset = ((y - (y % gridResolution)) + gridSize) / gridResolution
+			xoffset = ((x - (x % gridResolution)) + gridSize) / gridResolution
+			cellIndex = int((gridTotal * 2 * yoffset) + xoffset)
+
+			#update freq-specific model
+
+			n = i[3][cellIndex]
+			mean = i[4][cellIndex]
+			sd = i[5][cellIndex]
+
+			n, mean, m2 = recursiveVar(rssi, n, mean, sd * sd)
+
+			i[3][cellIndex] = n
+			i[4][cellIndex] = mean
+			i[5][cellIndex] = sqrt(m2)
+
+			#update combined model
+
+			n = model[0][3][cellIndex]
+			mean = model[0][4][cellIndex]
+			sd = model[0][5][cellIndex]
+
+			n, mean, m2 = recursiveVar(rssi, n, mean, sd * sd)
+
+			model[0][3][cellIndex] = n
+			model[0][4][cellIndex] = mean
+			model[0][5][cellIndex] = sqrt(m2)
+
+			#update mean
+			#oldMean = i[4][cellIndex]
+			#i[4][cellIndex] = ((i[4][cellIndex] * i[3][cellIndex]) + rssi) / (i[3][cellIndex] + 1)
+			#model[0][4][cellIndex] = ((model[0][4][cellIndex] * model[0][3][cellIndex]) + rssi) / (model[0][3][cellIndex] + 1)
+
+			#Increment no of detections
+			#i[3][cellIndex] = i[3][cellIndex] + 1
+			#model[0][3][cellIndex] = model[0][3][cellIndex] + 1
+
+			#todo: add standard dev
+			#i[5][cellIndex] = sqrt(recursiveVar(i[4][cellIndex], oldMean, rssi, i[5][cellIndex], i[3][cellIndex] - 1))
+			#model[0][5][cellIndex] = sqrt(recursiveVar(model[0][4][cellIndex], oldMean, rssi, model[0][5][cellIndex], model[0][3][cellIndex] - 1))
+
+			#good approximation for mapping rssi to 0-100 scale
+			display_mean = (i[4][cellIndex] * -2) - 60
+			display_combinedMean = (model[0][4][cellIndex] * -2) - 60
+
+			i[2].data[cellIndex] = display_mean
+			model[0][2].data[cellIndex] = display_combinedMean
+			
+			i[0].publish(i[2])
+			model[0][0].publish(model[0][2])
+
+#def recursiveVar(xnp,xn,x,vn,n):
+#	xnp = int(xnp)
+#	xn = int(xn)
+#	x = int(x)
+#	vn = int(vn)
+#	n = int(n)
+#	print xnp, xn, x, vn, n
+#       vnp= vn + pow(xn, 2) - pow(xnp, 2) + ((pow(x, 2) - vn - pow(xn, 2)) / (n + 1))
+#	#print vnp
+#       return vnp
+
+def recursiveVar(val, n, mean, m2):
+	n += 1
+	delta = val - mean
+	mean += delta/n
+	m2 += delta * (val - mean)
+
+	return n, mean, m2
+=======
 def updateMean(m,cellIndex,rssi,n):
     oldMean = m[4][cellIndex]
     newMean = ((oldMean * n) + rssi) / (n + 1)
     m[4][cellIndex] = newMean
     return (oldMean,newMean)
 
+>>>>>>> bcebe065b9d9cf1a7bd84309e2da16d7ae07ac92
 
 def updateStd(m, cellIndex, newMean, oldMean, rssi, n):
     vn = pow(m[5][cellIndex], 2)
@@ -60,6 +178,13 @@ def updateStd(m, cellIndex, newMean, oldMean, rssi, n):
         stdNew = 0
     m[5][cellIndex] = stdNew
 
+<<<<<<< HEAD
+	for i in xrange((gridTotal * 2) * (gridTotal * 2)):
+		detections.append(0)
+		mean.append(0.0)
+		std.append(0.0)
+=======
+>>>>>>> bcebe065b9d9cf1a7bd84309e2da16d7ae07ac92
 
 def tagCallback(data):
     global tfListener
