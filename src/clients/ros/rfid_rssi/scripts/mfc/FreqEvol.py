@@ -62,14 +62,17 @@ if __name__ == '__main__':
     allData=np.zeros((width, height,numFreq))
     i=0
     for m in modelList[:-1:]:
-        freqList[i]=(float(m[1])/1000)
+        try:
+            freqList[i]=(float(m[1])/1000)
+        except ValueError:
+            pass
         avRssi = np.array(m[4]).reshape(width, height)
         allData[:,:,i]=avRssi
         i=i+1
 
     jmax=kmax=60
     tol=gridResolution
-    rTarg=1
+    rTarg=4
     Tetol = 0.1*math.pi
     teDeg=30
     teTarg = teDeg*math.pi/180
@@ -105,9 +108,12 @@ if __name__ == '__main__':
     distS=str(rTarg)
     plt.text(902, -62, 'Tag at '+distS+' m.,'+ angleS+ ' deg.', fontdict=font)
 
+    #plt.plot((freqList[0], freqList[-1]), (propAtR[-1], propAtR[-1]), 'k.-')
+    av=np.nanmean(propAtR[:-1:])
+    plt.plot((freqList[0], freqList[-1]), (av, av), 'k.-')
+    plt.show()
 
-    pdf = PdfPages("figures/freq_dep_"+distS+"m_"+angleS+"deg.pdf")
+    pdf = PdfPages("freq_dep_"+distS+"m_"+angleS+"deg.pdf")
     pdf.savefig(fig)
     pdf.close()
 
-    plt.show()
