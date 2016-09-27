@@ -62,6 +62,9 @@ class rol_server():
             ans=self.performAcFindAct(receivedPayload )
         else:
             ans=self.createErrorResponse('Unknown action: '+ findObjectReq.action)
+
+        self.rol_pub.publish(ans.response)
+
         return ans
 
     def performListAct(self,payload):
@@ -191,6 +194,8 @@ class rol_server():
     def rosSetup(self):
         self.probHandlerList=dict()
         self.regions_file=''
+        self.rolTopic=rospy.get_param('rolTopic','rol_requests')
+
         listOfTopics = rospy.get_published_topics()
 
         for tup in listOfTopics:
@@ -240,9 +245,13 @@ class rol_server():
         # get parameters from ros: find out tracked objects, locations, subscribe to their probs trackers...
         self.rosSetup()
 
+        # create publisher for service requests
+        self.rol_pub = rospy.Publisher(self.rolTopic, String, queue_size=10)
 
 
+        # start service callback
         self.s=rospy.Service('rol_server', findObject, self.performLoc)
+
 
         rospy.loginfo("Ready...")
         rospy.spin()
