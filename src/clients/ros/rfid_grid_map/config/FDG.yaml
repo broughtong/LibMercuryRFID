@@ -1,0 +1,31 @@
+mapName: FDG DAT
+Regions:
+  - name: kitchen
+    min:
+      x: 6.61
+      y: 8.07
+    max:
+      x: 9.24
+      y: 11.62
+  - name: livingroom
+    min:
+      x: 1.54
+      y: 11.20
+    max:
+      x: 8.30
+      y: 14.78  
+    subregions:
+      - name: livingroom - sofas
+        min:
+          x: 1.54
+          y: 11.20
+        max:
+          x: 5.26
+          y: 14.00
+      - name: livingroom - table
+        min:
+          x: 5.26
+          y: 11.20
+        max:
+          x: 8.30
+          y: 14.78
