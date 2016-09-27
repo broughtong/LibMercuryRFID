@@ -8,14 +8,20 @@ Regions:
       x: 9.24
       y: 11.62
   - name: livingroom
+    min:
+      x: 1.54
+      y: 11.20
+    max:
+      x: 8.30
+      y: 14.78  
     subregions:
       - name: livingroom - sofas
         min:
           x: 1.54
-          y: 9.91
+          y: 11.20
         max:
           x: 5.26
-          y: 14.0
+          y: 14.00
       - name: livingroom - table
         min:
           x: 5.26
@@ -23,5 +29,3 @@ Regions:
         max:
           x: 8.30
           y: 14.78
-
-
