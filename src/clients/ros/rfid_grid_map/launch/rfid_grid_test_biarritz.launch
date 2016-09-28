@@ -25,7 +25,7 @@
   </include>
   
  <!-- Launch ROL Node -->
-  <node name="rol_srv_node" pkg="rol_server" type="rol_server_node.py"/>
+  <!-- <node name="rol_srv_node" pkg="rol_server" type="rol_server_node.py"/> -->
 
   <!-- Launch RViz with the demo configuration -->
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find rfid_grid_map)/rviz/rfid_gridmap_test.rviz" />
