@@ -27,7 +27,7 @@ from std_msgs.msg import String
 from geometry_msgs.msg import PointStamped, PoseArray, Pose, Point, Quaternion
 #from rfid_node.msg import TagReading
 
-PARTICLE_COUNT = 500    # Total number of particles
+PARTICLE_COUNT = 1000    # Total number of particles
 
 
 positives = 0
@@ -39,7 +39,15 @@ distances = []
 # Some utility functions
 
 def add_noise(level, *coords):
-    return [x + random.uniform(-level, level) for x in coords]
+	lst = list(coords)
+
+	for x in xrange(0, len(lst)):
+		lst[x] = lst[x] + random.uniform(-level, level)
+
+	return tuple(lst)
+
+#def add_noise(level, *coords):
+#   return [x + random.uniform(-level, level) for x in coords]
 
 def add_little_noise(*coords):
     return add_noise(0.02, *coords)
@@ -106,15 +114,19 @@ class WeightedDistribution(object):
 class SpatioFreqModel(object):
 
     def __init__(self):
+
         tid = '300833B2DDD9014000000014'
         self.gridResolution = 0.3
         self.gridSize = 9
 
-	self.model = pickle.load(open("models/3000.p", "rb"))
-	
-        numFreqs = len(self.model) - 1
+	if self.gridSize % self.gridResolution > 0.0001:
+		print "Error: grid size must be a multiple of the grid resolution"
+		_ = raw_input()
 
-    def metric2cell(self,x):
+	self.model = pickle.load(open("models/3000.p", "rb"))
+        #numFreqs = len(self.model) - 1
+
+    """def metric2cell(self,x):
         c=int((x+(self.gridSize/2))/self.gridResolution)
         if c>=math.ceil(self.gridSize / self.gridResolution):
             c = math.ceil(self.gridSize / self.gridResolution)-1
@@ -130,7 +142,7 @@ class SpatioFreqModel(object):
             findex =0
             #rospy.loginfo("Frequency "+str(f)+" not in model")
         return findex
-
+"""
     def getNearest(self,cx,cy,cf,m):
         maxCell=math.ceil(self.gridSize / self.resolution)-1
         for offset in range(1,maxCell):
@@ -143,52 +155,49 @@ class SpatioFreqModel(object):
 
 
     def probability(self,rssi_db, x, y, freq_khz):
-	#copmputes probability
 
-	gridTotal = self.gridSize * 2
+	if x > self.gridSize or y > self.gridSize or x < -self.gridSize or y < -self.gridSize:
+		print "Warning: position outside of sensor model, consider creating a larger sensor model"
+		return pow(10, -99)
 
-	if x > gridTotal or y > gridTotal or -x > gridTotal or -y > gridTotal:
-		return
+	roundedx = x - (x % self.gridResolution)
+	roundedy = y - (y % self.gridResolution)
 
-	yoffset = ((y - (y % self.gridResolution)) + self.gridSize) / self.gridResolution
-	xoffset = ((x - (x % self.gridResolution)) + self.gridSize) / self.gridResolution
-	index = int((gridTotal * 2 * yoffset) + xoffset)
+	indexx = roundedx / self.gridResolution
+	indexy = roundedy / self.gridResolution
+
+	correctedx = indexx + (self.gridSize / self.gridResolution)
+	correctedy = indexy + (self.gridSize / self.gridResolution)
+
+	index = int(((self.gridSize / self.gridResolution) * 2 * correctedy) + correctedx)
 	
 	for i in self.model:
-		if i[1] == freq_khz:
+		if str(i[1]) == str(freq_khz):
 
-			"""if self.model[0][4][index] == 0:
-				av_rssi = 999
-				std_rssi = 0
-			else:
-				av_rssi = self.model[0][4][index]
-				std_rssi = self.model[0][5][index]"""
-			if i[4][index] == 0:
+			if i[4][index] == 0 or i[5][index] == 0:
+				#sensor model blank for this location
+				#the next if/else statement checks to see if the generic model contains data and uses that instead
+				#this is sort of a hybrid technique, and the if else statement can be commented out to use purely the per-frequency probabilities
 				if self.model[0][4][index] == 0:
-					av_rssi = 100
-					std_rssi = 0
+					return pow(10, -99)
 				else:
 					av_rssi = self.model[0][4][index]
 					std_rssi = self.model[0][5][index]
+
+				#instead of defaulting to the generic model, this can be uncommented to ignore it
+				#return pow(10, -99) 
 			else:
 				av_rssi = i[4][index]
 				std_rssi = i[5][index]
 
-        rssi_dif=pow(10,float(rssi_db)/10) - av_rssi
+	if std_rssi == 0:
+		print "bad std"
+		return pow(10, -99)
 
-        try:
-            prob= math.exp( - math.pow(rssi_dif,2) / (2*std_rssi*std_rssi)  ) / (std_rssi * math.sqrt(2*math.pi) )
-        except ZeroDivisionError:
-            prob =0
-
-        if prob==float('nan'):
-            prob=0
-        else:
-            pass
+	rssi_dif = rssi_db - av_rssi
+	prob = math.exp(-math.pow(rssi_dif, 2) / (2*std_rssi*std_rssi)) / (std_rssi * math.sqrt(2 * math.pi))
 
         return prob
-
-
 
 # ==================================================================================================
 class Particle(object):
@@ -312,6 +321,7 @@ class PartFilter():
         particlePose.point.z = 0.0
         particlePose.header.frame_id = self.globalTFName
 
+	#convert map coords to robot coords
         rel_pose = self.tl.transformPoint(self.robotTFName, particlePose)
 
         weights = self.tagModel.probability(rssi_db, rel_pose.point.x, rel_pose.point.y, freq_khz)
@@ -350,10 +360,10 @@ class PartFilter():
         poses.header.stamp = rospy.Time.now()
 
         for p in self.particles:
-            point = Point(p.x, p.y, 0)
-            direction = p.h
-            quat = Quaternion(*tf.transformations.quaternion_from_euler(0, 0, direction))
-            poses.poses.append(Pose(point, quat))
+	        point = Point(p.x, p.y, 0)
+       		direction = p.h
+		quat = Quaternion(*tf.transformations.quaternion_from_euler(0, 0, direction))
+		poses.poses.append(Pose(point, quat))
 
         self.pose_pub.publish(poses)
 
@@ -371,56 +381,61 @@ class PartFilter():
 
             if id == self.tagID:
 
-                # get robot position
-                (rob_x, rob_y, rob_yaw)=self.getRobotPose()
-		dx = rob_x - -0.3
-		dy = rob_y - 1.5
-		distanceToTag = sqrt((dx * dx) + (dy * dy))
-
                 # sensor reading
                 for p in self.particles:
                     p.w=self.getNewWeights(rssi_db, freq_khz, p.x, p.y)
+
 
                 # ---------- Try to find current best estimate for display ----------
                 m_x, m_y, m_confident = compute_mean_point(self.particles)
 
 
+		
                 # ---------- Shuffle particles ----------
                 new_particles = []
 
                 # Normalise weights
                 nu = sum(p.w for p in self.particles)
+		#print "sum: " + str(nu)
 		if nu:
                     for p in self.particles:
                         p.w = p.w / nu
+		else:
+			#pass
+			print "no value"
+			_ = raw_input()
 
                 # create a weighted distribution, for fast picking
                 dist = WeightedDistribution(self.particles)
-
                 for _ in self.particles:
-                    p = dist.pick()
-                    if p is None:  # No pick b/c all totally improbable
-                        new_particle = Particle.create_random(1, self.mapSizeX,self.mapSizeY)[0]
-                    else:
-			deltax = p.x - -0.3
-			deltay = p.y - 1.5
-			tagToEst = sqrt((deltax * deltax) + (deltay * deltay))
-			cumulative += tagToEst
-			if p.y > 0.5 and p.y < 2.5 and p.x < 0.7 and p.x > -1.3:
-				print "S", p.x, p.y
-				positives += 1
-			else:
-				print "F", p.x, p.y
-				negatives += 1                 
-			print "##S: " + str(positives) + " F: " + str(negatives) + " %: " + str((float(positives) / (positives + negatives)) * 100) + " C: " + str(cumulative)
-			distances.append((distanceToTag, tagToEst))
-                        new_particle = Particle(p.x, p.y,
+			p = dist.pick()
+			if p is None:  # No pick b/c all totally improbable
+				new_particle = Particle.create_random(1, self.mapSizeX,self.mapSizeY)[0]
+				#for i in self.particles:
+				#pass	
+				#print "Improbable particles"
+				_ = raw_input()				
+                	else:
+				deltax = p.x - -0.3
+				deltay = p.y - 1.5
+				tagToEst = sqrt((deltax * deltax) + (deltay * deltay))
+				cumulative += tagToEst
+				if p.y > 0.5 and p.y < 2.5 and p.x < 0.7 and p.x > -1.3:
+					#print "S", p.x, p.y
+					positives += 1
+				else:
+					#print "F", p.x, p.y
+					negatives += 1                 
+				#print "##S: " + str(positives) + " F: " + str(negatives) + " %: " + str((float(positives) / (positives + negatives)) * 100) + " C: " + str(cumulative)
+                        	new_particle = Particle(p.x, p.y,
                                                 #heading=self.mug.h,
                                                 noisy=True)
-                    new_particles.append(new_particle)
+		    	new_particles.append(new_particle)
 
+        
+		self.publishPoses()
+  		
                 self.particles = new_particles
-                self.publishPoses()
 
                 # ---------- Move things ----------
                 #old_heading = self.mug.h
