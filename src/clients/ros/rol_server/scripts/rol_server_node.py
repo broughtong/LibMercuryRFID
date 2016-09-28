@@ -242,6 +242,9 @@ class rol_server():
         self.locationsList=[]
         self.sublocationsList = []
 
+	#sleep for 10 seconds to be sure tag nodes are running
+	rospy.sleep(10.)
+
         # get parameters from ros: find out tracked objects, locations, subscribe to their probs trackers...
         self.rosSetup()
 

@@ -20,7 +20,7 @@ def rfidCallback(message):
 if __name__ == "__main__":
 
 	rfid.init()
-	reader = rfid.startReader("tmr:///dev/rfid", rfidCallback)
+	reader = rfid.startReader("tmr:///dev/ttyACM0", rfidCallback)
 
 	_ = raw_input()
 

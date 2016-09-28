@@ -10,8 +10,41 @@
   <!-- Launch the grid map and visualization for a tag -->
   <include file="$(find rfid_grid_map)/launch/grid.launch">
     <!-- all vars that included.launch requires must be set -->
-    <arg name="tagID" value="300833B2DDD901410000000F" />
+    <arg name="tagID" value="390200010000000000000000" />
     <arg name="object" value="wallet" />
+    <arg name="regions_file" value="$(find rfid_grid_map)/config/FDG.yaml"/>
+  </include>
+
+  
+  <!-- Launch the grid map and visualization for a tag -->
+  <include file="$(find rfid_grid_map)/launch/grid.launch">
+    <!-- all vars that included.launch requires must be set -->
+    <arg name="tagID" value="390200010000000000000001" />
+    <arg name="object" value="keys" />
+    <arg name="regions_file" value="$(find rfid_grid_map)/config/FDG.yaml"/>
+  </include>
+  
+  <!-- Launch the grid map and visualization for a tag -->
+  <include file="$(find rfid_grid_map)/launch/grid.launch">
+    <!-- all vars that included.launch requires must be set -->
+    <arg name="tagID" value="390200010000000000000002" />
+    <arg name="object" value="pillbox" />
+    <arg name="regions_file" value="$(find rfid_grid_map)/config/FDG.yaml"/>
+  </include>
+  
+  <!-- Launch the grid map and visualization for a tag -->
+  <include file="$(find rfid_grid_map)/launch/grid.launch">
+    <!-- all vars that included.launch requires must be set -->
+    <arg name="tagID" value="390200010000000000000003" />
+    <arg name="object" value="remote" />
+    <arg name="regions_file" value="$(find rfid_grid_map)/config/FDG.yaml"/>
+  </include>
+  
+  <!-- Launch the grid map and visualization for a tag -->
+  <include file="$(find rfid_grid_map)/launch/grid.launch">
+    <!-- all vars that included.launch requires must be set -->
+    <arg name="tagID" value="390200010000000000000004" />
+    <arg name="object" value="glasses" />
     <arg name="regions_file" value="$(find rfid_grid_map)/config/FDG.yaml"/>
   </include>
   

@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     rfid.init()
 
-    reader = rfid.startReader("tmr:///dev/rfid", rfidCallback)
+    reader = rfid.startReader("tmr:///dev/ttyACM0", rfidCallback)
 
     #newEpcData='\x30\x08\x33\xB2\xDD\xD9\x01\x41\x00\x00\x00\x0A' 
     if (len(sys.argv)==2 ):
