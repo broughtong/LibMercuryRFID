@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 import ros, tf
 import random, time
+import threading, Queue
 
 from SpatioModel import SpatioModel
 from TagState import *
+from ParticleFilter import ParticleFilter
 
 PARTICLE_COUNT = 1000
 
 model = SpatioModel("models/3000.p")
 tagStates = []
+threadQueue = Queue.Queue()
 
 def parseTagData(data):
 	data = data.split(":")
@@ -26,24 +29,21 @@ def tagCallback(data):
 	pos, orientation = tfListener.lookupTransform(robotTFName, tagTFName, now)
 	newTagRead = TagRead(id, rssi, phase, freq, pos, orientation, time.time())
 
-	foundTag = False
-	for i in tagStates:
-		if i.id == id:
-			foundTag = True
-			i.append(newTagRead)
-	if foundTag == False:
-		tagState = TagState(id)
-		tagState.append(newTagRead)
-		tagStates.append(tagState)
+	threadQueue.put(newTagRead)
 
 def main():
 
 	random.seed(time.time())
-	rospy.init_node('particle_filter_f')
 
+	threadQueue = Queue.Queue()
+	particleThread = ParticleFilter(threadQueue)
+
+	rospy.init_node('particle_filter_f')
 	rospy.Subscriber("rfid/rfid_detect", String, tagCallback)
+
 	rospy.spin()
 
+	threadQueue.put("exit")
 
 if __name__ == '__main__':
 	main()
