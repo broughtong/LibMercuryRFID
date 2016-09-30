@@ -13,12 +13,21 @@ class SpatioModel():
 		#Use the generic sensor model if a particular frequency doesn't have any data
 		self.defaultToGeneric = defaultToGeneric
 
+		#used for reloading model
+		self.filaName = fileName
+
 		self.model = pickle.load(open(fileName, "rb"))
 		self.gridSize = self.model[0][6]
 		self.gridResolution = self.model[0][7]
 
 		if self.gridSize % self.gridResolution > 0.001:
 			print "Error: Sensor model size/resolution do not match"
+
+	def reloadModel():
+
+		self.model = pickle.load(open(fileName, "rb"))
+		self.gridSize = self.model[0][6]
+		self.gridResolution = self.model[0][7]
 	
 	def getProbability(self, x, y, rssiDB, freqKHz="generic"):
 
