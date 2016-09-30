@@ -3,11 +3,12 @@ import ros, tf
 import random, time
 
 from SpatioModel import SpatioModel
+from TagState import *
 
 PARTICLE_COUNT = 1000
 
 model = SpatioModel("models/3000.p")
-tagState = []
+tagStates = []
 
 def parseTagData(data):
 	data = data.split(":")
@@ -15,15 +16,25 @@ def parseTagData(data):
 	rssi = int(data[2])
 	phase = data[3]
 	freq = data[4]
-	return (id, rssi, freq)
+	return (id, rssi, phase, freq)
 
 def tagCallback(data):
 
-	(id, rssi, freq) = parseTagData(data)
+	(id, rssi, phase, freq) = parseTagData(data)
+	now = rospy.Time(0)
+	tfListener.waitForTransform(robotTFName, tagTFName, now, rospy.Duration(2.0))
+	pos, orientation = tfListener.lookupTransform(robotTFName, tagTFName, now)
+	newTagRead = TagRead(id, rssi, phase, freq, pos, orientation, time.time())
 
-	for tag in tagState:
-
-		if tag
+	foundTag = False
+	for i in tagStates:
+		if i.id == id:
+			foundTag = True
+			i.append(newTagRead)
+	if foundTag == False:
+		tagState = TagState(id)
+		tagState.append(newTagRead)
+		tagStates.append(tagState)
 
 def main():
 
