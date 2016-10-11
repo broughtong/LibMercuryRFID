@@ -1,7 +1,7 @@
-g++ -c rfid.cpp -o rfid.o
+g++ -fPIC -c rfid.cpp
 
-g++ -shared -fPIC rfid.o -o rfid.so.1
+g++ -shared rfid.o -o rfid.so.1
 
-g++ rfid-test.cpp -o rfid-test -Lrfid.so.1
+g++ readAsync.cpp -o readAsync -L. rfid.so.1 -lmercuryrfid -Wl,-rpath,.
 
-chmod +x rfid-test
+chmod +x readAsync

@@ -1,30 +1,43 @@
 #include "rfid.h"
+#include <iostream>
 
-extern "C"
-{
-	int startReader(const char* deviceURI, void (*callback)(const char** message));
-	int stopReader(int readerID);
-	int closeRFID();
-}
+namespace rfid{
 
-void rfid::init()
-{
-	//start comms etc
-}
+	extern "C"
+	{
+		int RFIDinit(void (*callback)(char* message));
+		int RFIDclose();
+		int RFIDstartReader(const char* deviceURI);
+		int RFIDstopReader(int readerID);
+		//int RFIDpauseReader(ReaderID readerID);
+		//int RFIDunpauseReader(ReaderID readerID);
+	}
 
-int rfid::startReader(const char* deviceURI, void* callbackFunction)
-{
-	int readerID = startReader(deviceURI, callbackFunction);
+	void init()
+	{
+		RFIDinit(&callbackHandler);
+	}
 
-	return readerID;
-}
+	void close()
+	{
+		RFIDclose();
+	}
 
-void rfid::stopReader(int readerID)
-{
-	stopReader(readerID);
-}
+	ReaderID startReader(const char* deviceURI, void(*callbackFunction)(char* message))
+	{
+		ReaderID readerID = RFIDstartReader(deviceURI);
 
-void rfid::close()
-{
-	closeRFID();
+		return readerID;
+	}
+
+	void stopReader(ReaderID readerID)
+	{
+		RFIDstopReader(readerID);
+	}
+
+	void callbackHandler(char* char_ptr)
+	{
+		std::cout << "Message from cpp client: ";
+		std::cout << char_ptr << std::endl;
+	}
 }

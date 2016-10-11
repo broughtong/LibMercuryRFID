@@ -31,6 +31,8 @@ typedef int ReaderID;
 void* communicatorThreadFunction();
 Queue* communicatorQueue;
 
+pthread_t communicatorThread;
+
 int RFIDinit(ForeignCallback callbackHandle)
 {
 	if(callbackHandle == NULL)
@@ -42,8 +44,11 @@ int RFIDinit(ForeignCallback callbackHandle)
 	foreignCallback = callbackHandle;
 
 	communicatorQueue = createQueue();
-	pthread_t communicatorThread;
-	pthread_create(&communicatorThread, NULL, communicatorThreadFunction, (void*) communicatorQueue);
+	pthread_attr_t threadAttribute;
+	pthread_attr_init(&threadAttribute);
+	pthread_attr_setdetachstate(&threadAttribute, PTHREAD_CREATE_JOINABLE);
+	pthread_create(&communicatorThread, &threadAttribute, communicatorThreadFunction, (void*) communicatorQueue);
+	pthread_attr_destroy(&threadAttribute);
 
 	return 0;
 }
@@ -51,7 +56,6 @@ int RFIDinit(ForeignCallback callbackHandle)
 int RFIDclose()
 {
 	Enqueue(communicatorQueue, "exit");
-
 	int i;
 
 	for(i = 0; i < readerCount; i++)
@@ -75,6 +79,8 @@ int RFIDclose()
 	free(status);
 	free(model);
 
+	pthread_join(communicatorThread, NULL);
+
 	return 0;
 }
 
@@ -88,16 +94,13 @@ void* communicatorThreadFunction(void* messageQueue)
 
 		if(message != NULL)
 		{
-			//printf("message receivde\n");
 			if(strcmp(message, "exit") == 0)
 			{
 				isThreadRunning = 0;
 			}
 			else
 			{
-				//printf("thread saw a tag!!: %s\n", message);
 				foreignCallback(message);
-				//printf("thread message send!\n");
 			}
 		}
 		else
@@ -106,7 +109,6 @@ void* communicatorThreadFunction(void* messageQueue)
 			usleep(1000*milliseconds);
 		}
 	}
-	printf("closing\n");
 	return NULL;
 }
 
@@ -128,6 +130,7 @@ void tagCallback(TMR_Reader *readerr, const TMR_TagReadData *t, void *cookie)
 
 	char msg[256];
 	sprintf(msg, "%i:%s:%d:%i:%i:%u:%u", readerLocation, tagID, t->rssi, t->phase, t->frequency, t->timestampHigh, t->timestampLow);
+	printf("%s", msg);
 
 	//uint64_t timestamp = ((uint64_t) t->timestampHigh<< 32 ) | t->timestampLow;
 
@@ -139,7 +142,7 @@ void exceptionCallback(TMR_Reader *reader, TMR_Status error, void *cookie)
 	fprintf(stderr, "Error:%s\n", TMR_strerr(reader, error));
 }
 
-int startReader(const char* deviceURI)
+int RFIDstartReader(const char* deviceURI)
 {
 	readers = realloc(readers, (readerCount + 1) * sizeof(TMR_Reader*));
 	TMR_Reader* pr = malloc(sizeof(TMR_Reader));
@@ -248,7 +251,7 @@ int startReader(const char* deviceURI)
 	return (uniqueReaderInstance - 1);
 }
 
-int stopReader(int readerId)
+int RFIDstopReader(int readerId)
 {
 	int error;
 	error=checkError(TMR_stopReading(readers[readerId]), "Stopping reader");
@@ -257,7 +260,7 @@ int stopReader(int readerId)
 }
 
 int reStartReader(int readerId)
-{	
+{
 	  int error;
 	  error=checkError(TMR_startReading(readers[readerId]), "restarting reader");
 	  return error;
@@ -549,12 +552,18 @@ int setParameter(const char* parameterS, const char* value)
 	}*/
 }
 
-/*
-void* getParameter(const char* parameterS
+
+int getParameter(const char* parameter, void* value)
 {
+	return 0;/*
 	int parameter = getEnum(parameterS);
 
-	if(checkError(TMR_paramSet(readerp, parameter,
-
-
-}*/
+	if(checkError(TMR_paramGet(readerp, parameter, value), "Getting External Parameter"))
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}*/
+}

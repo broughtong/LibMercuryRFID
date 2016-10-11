@@ -11,8 +11,7 @@ typedef struct QueueStructure
 	struct QueueElement* firstElement;
 	struct QueueElement* lastElement;
 
-	pthread_mutex_t EnqueueLock;
-	pthread_mutex_t DequeueLock;
+	pthread_mutex_t lock;
 }Queue;
 
 Queue* createQueue();

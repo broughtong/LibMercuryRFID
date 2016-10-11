@@ -64,6 +64,5 @@ if __name__ == "__main__":
     while error:
            error=(rfid.writeTag(reader, newEpcData,12)!=0)
 	
-    print "bye!"
     rfid.close()
 	
