@@ -57,7 +57,7 @@ def startReader(deviceURI, callbackFunction):
 
 	global lib, callbackList, callbackHandler
 
-	readerID = lib.startReader(deviceURI)
+	readerID = lib.RFIDstartReader(deviceURI)
 
 	#lib.RFIDclose()
 	#lib.getHopTime(readerID)
@@ -70,7 +70,7 @@ def stopReader(readerID):
 
 	global lib
 
-	lib.stopReader(readerID)
+	lib.RFIDstopReader(readerID)
 
 # configures transmision power to value, given in 100*dBm (should be between 500 and 3000)
 def setPower(readerID, value):
