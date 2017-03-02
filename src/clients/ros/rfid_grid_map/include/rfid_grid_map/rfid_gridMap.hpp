@@ -62,8 +62,17 @@ class rfid_gridMap
       void drawSquare(double start_x,double start_y,double end_x,double end_y,double value);
       
       void drawCircle(double x, double y, double radius, double value);
+
+      void updateLastDetectionPose(double x, double y);
+
+      void wasHere(double start_x,double start_y,double end_x,double end_y, std::string region_name);
     
     private:
+    
+      double last_x;
+      double last_y;
+      std::string lastRegion;
+
       //! ROS nodehandle.
       ros::NodeHandle& nodeHandle_;
       

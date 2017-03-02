@@ -1,0 +1,57 @@
+<launch>
+  <!-- Launch kompai nodes -->
+  <!--  <include file="$(find ros_pure)/launch/ros_pure.launch" />  -->
+
+  <!-- Launch RFID Node -->
+  <node name="rfid_reader" pkg="rfid_node" type="rfid_reader_ros.py"/>
+
+  <!-- We need a map published under /map topic... -->
+  
+  <!-- Launch the grid map and visualization for a tag -->
+  <include file="$(find rfid_grid_map)/launch/grid.launch">
+    <!-- all vars that included.launch requires must be set -->
+    <arg name="tagID" value="390200010000000000000000" />
+    <arg name="object" value="wallet" />
+    <arg name="regions_file" value="$(find rfid_grid_map)/config/FDG.yaml"/>
+  </include>
+
+  
+  <!-- Launch the grid map and visualization for a tag -->
+  <include file="$(find rfid_grid_map)/launch/grid.launch">
+    <!-- all vars that included.launch requires must be set -->
+    <arg name="tagID" value="390200010000000000000001" />
+    <arg name="object" value="keys" />
+    <arg name="regions_file" value="$(find rfid_grid_map)/config/FDG.yaml"/>
+  </include>
+  
+  <!-- Launch the grid map and visualization for a tag -->
+  <include file="$(find rfid_grid_map)/launch/grid.launch">
+    <!-- all vars that included.launch requires must be set -->
+    <arg name="tagID" value="390200010000000000000002" />
+    <arg name="object" value="pillbox" />
+    <arg name="regions_file" value="$(find rfid_grid_map)/config/FDG.yaml"/>
+  </include>
+  
+  <!-- Launch the grid map and visualization for a tag -->
+  <include file="$(find rfid_grid_map)/launch/grid.launch">
+    <!-- all vars that included.launch requires must be set -->
+    <arg name="tagID" value="390200010000000000000003" />
+    <arg name="object" value="remote" />
+    <arg name="regions_file" value="$(find rfid_grid_map)/config/FDG.yaml"/>
+  </include>
+  
+  <!-- Launch the grid map and visualization for a tag -->
+  <include file="$(find rfid_grid_map)/launch/grid.launch">
+    <!-- all vars that included.launch requires must be set -->
+    <arg name="tagID" value="390200010000000000000004" />
+    <arg name="object" value="glasses" />
+    <arg name="regions_file" value="$(find rfid_grid_map)/config/FDG.yaml"/>
+  </include>
+  
+ <!-- Launch ROL Node -->
+  <node name="rol_srv_node" pkg="rol_server" type="rol_server_node.py"/>
+
+  <!-- Launch RViz with the demo configuration -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find rfid_grid_map)/rviz/rfid_gridmap_test.rviz" />
+</launch>
+

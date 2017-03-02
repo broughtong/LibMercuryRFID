@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import math
-
+import pickle
 
 from matplotlib.colors import BoundaryNorm
 from matplotlib.ticker import MaxNLocator
@@ -13,20 +13,29 @@ from matplotlib.ticker import MaxNLocator
 # Main function.
 if __name__ == '__main__':
 
-    if False:
-
         tid = '300833B2DDD9014000000014'
         dx, dy = 0.3, 0.3
         gridSize = 8
 
-        # should be something like ./300833B2DDD9014000000004/866900
-        fileDIR = './' + tid
-        files = os.listdir(fileDIR)
-        freqSet = list()
-        for fileName in files:
-            f = (fileName[0:6])
-            if f not in freqSet:
-                freqSet.append(f)
+        # generate 2 2d grids for the x & y bounds
+        y, x = np.mgrid[slice(-(gridSize / 2), (gridSize / 2), dy),
+                        slice(-(gridSize / 2), (gridSize / 2), dx)]
+
+        # pick the desired colormap, sensible levels, and define a normalization
+        # instance which takes data values and translates those into levels.
+        cmap = plt.get_cmap('OrRd')
+
+        i = 0
+        fig, ax = plt.subplots(nrows=5, ncols=10)
+        ax = ax.reshape(50)
+
+        levels = MaxNLocator(nbins=15).tick_values(-80, 0)
+
+        # should be something like ./300833B2DDD9014000000004/866900/av_....
+        print os.getcwd()
+        tagDIR = './a' #+ tid
+        freqFoldersList = os.listdir(tagDIR)
+        freqSet = list(freqFoldersList)
         freqSet.sort()
 
         numCols = math.ceil(gridSize / dx)
@@ -36,36 +45,47 @@ if __name__ == '__main__':
         av_rssi_model = np.zeros((numCols, numRows, numFreqs))
         va_rssi_model = np.zeros((numCols, numRows, numFreqs))
 
-        for fileName in files:
+        for folder in freqFoldersList:
             doPrint = False
-            if 'av_rssi' in fileName:
-                fileURIprefix = fileDIR + '/'
-                fileURI = fileURIprefix + fileName
+            f = folder
+            fileURIprefix = tagDIR + '/' + folder
+            files = os.listdir(fileURIprefix)
+            for fileName in files:
+
+                fileURI = fileURIprefix +'/' + fileName
                 data = np.loadtxt(fileURI, delimiter=',')
 
-                f = fileName[0:6]
+
                 findex = freqSet.index(f)
 
-                av_rssi_model[:, :, findex] = data
-                doPrint = True
+                if 'av_rssi' in fileName:
+                    av_rssi_model[:, :, findex] = data
+                    doPrint = True
 
-            if 'va_rssi' in fileName:
-                fileURIprefix = fileDIR + '/'
-                fileURI = fileURIprefix + fileName
-                data = np.loadtxt(fileURI, delimiter=',')
+                if 'det' in fileName:
+                    numDetections = np.nansum(np.nansum(data))
 
-                f = fileName[0:6]
-                findex = freqSet.index(f)
+#                if 'va_rssi' in fileName:
+#                    va_rssi_model[:, :, findex] = data
+#                    doPrint = True
 
-                va_rssi_model[:, :, findex] = data
-                doPrint = True
+                if doPrint:
+                    f2=float(f)/1000
+                    print fileName + " (" + str(f2) + ") "+str(numDetections)+ " readings"
+                    #fig, axes = plt.subplots()
+                    #axes.imshow(data, interpolation='gaussian')
+                    #axes.set_title('gauzz')
+                    #plt.show()
 
-            if doPrint:
-                print fileName[7:-4] + " (" + fileName[0:6] + ")"
-                fig, axes = plt.subplots()
-                axes.imshow(data, interpolation='gaussian')
-                axes.set_title('gauzz')
-                plt.show()
+                    # contours are *point* based plots, so convert our bound into point centers
+                    # cf = ax[i].contourf(x ,  y , z, levels=levels, cmap=cmap)
+                    cf = ax[i].imshow(data, interpolation='gaussian', origin='lower')
+                    # fig.colorbar(cf, ax=ax[i])
+                    ax[i].set_title('Freq. ' + str(f2) + ' MHz')
+                    i = i + 1
+
+        fig.colorbar(cf, ax=ax[i-1])
+        plt.show()
 
 if False:
     tid = '300833B2DDD9014000000014'
@@ -85,15 +105,16 @@ if False:
     fig, ax = plt.subplots(nrows=2,ncols=2)
     ax=ax.reshape(4)
 
-    # should be something like ./300833B2DDD9014000000004/866900
-    fileDIR = './' + tid
-    files = os.listdir(fileDIR)
 
-    for fileName in files:
+    # should be something like ./300833B2DDD9014000000004/866900
+    tagDIR = './' + tid
+    freqFoldersList = os.listdir(tagDIR)
+
+    for fileName in freqFoldersList:
         if 'av_rssi' in fileName:
             # fileName=files[4]
             f = float(fileName[0:6])/1000
-            fileURIprefix = fileDIR + '/'
+            fileURIprefix = tagDIR + '/'
             fileURI = fileURIprefix + fileName
 
             z = np.loadtxt(fileURI, delimiter=',')
@@ -133,15 +154,15 @@ if False:
     #for tid in tidList:
         tid='300833B2DDD9014000000014'
         # should be something like ./300833B2DDD9014000000004/866900
-        fileDIR = './' + tid
-        files=os.listdir(fileDIR)
+        tagDIR = './' + tid
+        freqFoldersList=os.listdir(tagDIR)
         print tid
 
-        for fileName in files:
+        for fileName in freqFoldersList:
             if 'av_rssi' in fileName:
                 #fileName=files[4]
                 f=fileName[0:6]
-                fileURIprefix = fileDIR + '/'
+                fileURIprefix = tagDIR + '/'
                 fileURI = fileURIprefix + fileName
 
 

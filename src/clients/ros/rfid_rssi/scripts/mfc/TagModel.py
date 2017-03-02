@@ -13,7 +13,6 @@ class TagModel():
         self.gridSize=gridSize
         self.resolution=resolution
 
-
     def updateCell(self, x, y, rssi_db, freq_khz, phase_deg):
 
         if freq_khz not in self.gridsMap:

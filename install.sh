@@ -49,6 +49,7 @@ then
 	file="$element"
       fi
    done
+fi
 
 if [ -z "$file" ]
 then

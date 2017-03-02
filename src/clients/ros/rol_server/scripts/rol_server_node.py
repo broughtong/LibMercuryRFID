@@ -4,7 +4,8 @@ import yaml
 import rospy
 import operator
 from std_msgs.msg import String
-from rol_server.srv import findObject, findObjectRequest, findObjectResponse
+#from rol_server.srv import findObject, findObjectRequest, findObjectResponse
+from hmi_bridge.srv import findObject, findObjectRequest, findObjectResponse
 
 
 # Node class.
@@ -12,35 +13,58 @@ class ProbHandler():
     def __init__(self,top,obj):
         self.object=obj
         self.topic=top
+        self.lastLoc=''
         rospy.Subscriber(self.topic, String, self.probCallback)
 
     def probCallback(self,data):
         self.rawData=data.data
 
-    def getProbs(self):
-        splitData=self.rawData.split(',')
-        self.probs = splitData[1::2]
-        self.locations = splitData[::2]
+    def setLocations(self, locs):
+        self.locs=locs
 
-        probDict=dict(zip(self.locations,self.probs))
+    def getLastLoc(self):
+        return self.lastLoc
+
+    def getProbs(self):
+
+        try:
+            splitData=self.rawData.split(',')
+            self.probs = splitData[3::2]
+            self.locs = splitData[2::2]
+            self.lastLoc=splitData[0]
+        except AttributeError:
+            self.probs=[0]*len(self.locs)
+
+
+        probDict=dict(zip(self.locs, self.probs))
+
         return probDict
 
 class rol_server():
 
+    def percentFormat(self, strNum):
+
+        return  '{:.2f}'.format(100. *float( strNum))
+
 
     def performLoc(self,findObjectReq):
+        receivedAction = str.lower(findObjectReq.action)
+        receivedPayload = str.lower(findObjectReq.payload)
         rospy.logdebug("Received service request.")
-        rospy.logdebug("Action: %s", findObjectReq.action)
-        rospy.logdebug("Payload: %s",findObjectReq.payload)
+        rospy.logdebug("Action: %s", receivedAction)
+        rospy.logdebug("Payload: %s",receivedPayload)
 
-        if   findObjectReq.action is 'list':
-            ans=self.performListAct(findObjectReq.payload)
-        elif findObjectReq.action is 'find':
-            ans=self.performFindAct(findObjectReq.payload)
-        elif findObjectReq.action is 'accurate_find':
-            ans=self.performAcFindAct(findObjectReq.payload)
+        if   receivedAction== 'list':
+            ans=self.performListAct(receivedPayload )
+        elif receivedAction== 'find':
+            ans=self.performFindAct(receivedPayload )
+        elif receivedAction== 'accurate_find':
+            ans=self.performAcFindAct(receivedPayload )
         else:
             ans=self.createErrorResponse('Unknown action: '+ findObjectReq.action)
+
+        self.rol_pub.publish(ans.response)
+
         return ans
 
     def performListAct(self,payload):
@@ -50,11 +74,11 @@ class rol_server():
         :return: filled srv response with proper list
         '''
 
-        if   payload is 'objects':
+        if   payload == 'objects':
             ans=self.createOkResponse(self.objectsList)
-        elif payload is 'locations':
+        elif payload == 'locations':
             ans=self.createOkResponse(self.locationsList)
-        elif payload is 'sublocations':
+        elif payload == 'sublocations':
             ans=self.createOkResponse(self.sublocationsList)
         else:
             ans=self.createErrorResponse('Unknown payload for list action:'+ payload)
@@ -72,7 +96,7 @@ class rol_server():
     def performFindAct(self, obj):
 
         if obj in self.objectsList:
-            probs = self.getProbs(obj)
+            probs = self.getObjectProbs(obj)
             ans=self.createOkResponse(probs)
         else:
             ans = self.createErrorResponse('Unknown object to find:' + obj)
@@ -110,15 +134,21 @@ class rol_server():
         return ans
 
 
-    def getProbs(self,obj):
-        ans = ''
+    def getObjectProbs(self,obj):
+        ans = []
 
-        probDict=(self.probHandlerList[obj]).getProbs()
-        fullProbs = sorted(probDict.items(), key=operator.itemgetter(1))
+        pH=self.probHandlerList[obj]
+        probDict=pH.getProbs()
+        fullProbs = sorted(probDict.items(), key=operator.itemgetter(1), reverse=True)
 
+        lastL=pH.getLastLoc()
+        if (lastL != ''):
+            ans.append(lastL)
+            ans.append('-1')
         for z,p in fullProbs:
             if z in self.locationsList:
-                ans=ans+z+str(p)
+                ans.append(z)
+                ans.append(self.percentFormat(p))
         return ans
 
     def getAcProbs(self,obj):
@@ -128,28 +158,35 @@ class rol_server():
         probDict = (self.probHandlerList[obj]).getProbs()
 
         #get most probable location
-        bestProb=0
-        bestRegion=''
-        for reg,prob in probDict:
-            if bestProb<prob:
-                bestProb=prob
-                bestRegion=reg
+        fullProbs = sorted(probDict.items(), key=operator.itemgetter(1), reverse=True)
+
+        bestRegion,bestProb = fullProbs[0]
+
+        rospy.logdebug('Region is:   ' + bestRegion)
+        rospy.logdebug('Probability: ' + str(bestProb))
 
         #get a probabilities dict from this location
         bestSublocationsDict=dict()
-        for bestRegion in self.yDict['Regions']:
-            if bestRegion.has_key('subregions'):
-                for subR in bestRegion['subregions']:
-                    bestSublocationsDict[subR['name']]=probDict[subR['name']]/bestProb
+        for reg in self.yDict['Regions']:
+            if reg.has_key('subregions'):
+                if reg['name'] == bestRegion:
+                    for subR in reg['subregions']:
+                        rospy.logdebug('Subregion is: '+subR['name'])
+                        rospy.logdebug('Probability:  ' + probDict[subR['name']])
+                        rospy.logdebug('Relative Pr:  ' + probDict[subR['name']])
+                        bestSublocationsDict[subR['name']]=str(float(probDict[subR['name']])/float(bestProb))
 
         #parse a list of relative probabilities
         if not bestSublocationsDict:
             ans.append(bestRegion)
-            ans.append(str(bestProb))
-            ans=','.join(ans)
+            ans.append(self.percentFormat(bestProb))
+            #ans=','.join(ans)
         else:
-            sortedList = sorted(bestSublocationsDict.items(), key=operator.itemgetter(1))
-            ans=','.join([i for sub in sortedList for i in sub])
+            sortedList = sorted(bestSublocationsDict.items(), key=operator.itemgetter(1),reverse=True)
+            for bestRegion,bestProb in sortedList:
+                ans.append(bestRegion)
+                ans.append(self.percentFormat(bestProb))
+                #ans=[i for tup in sortedList for i in tup]
 
 
         return ans
@@ -157,27 +194,34 @@ class rol_server():
     def rosSetup(self):
         self.probHandlerList=dict()
         self.regions_file=''
+        self.rolTopic=rospy.get_param('rolTopic','rol_requests')
+
         listOfTopics = rospy.get_published_topics()
 
         for tup in listOfTopics:
             if ('probs' in tup[0]) and ('std_msgs/String' in tup[1]):
                 foundTopic=tup[0]
                 nodeName=foundTopic[0:-5]
-                objectName=rospy.get_param(nodeName+'object')
-                prH = ProbHandler(foundTopic,objectName)
-                self.probHandlerList[objectName]=(prH)
-                self.objectsList.append(objectName)
                 if len(self.regions_file)==0:
                     self.regions_file=rospy.get_param(nodeName + 'regions_file')
+                    self.loadLocations()
+
+                objectName=rospy.get_param(nodeName+'object')
+                self.objectsList.append(objectName)
+
+                prH = ProbHandler(foundTopic,objectName)
+                prH.setLocations(self.locationsList)
+                self.probHandlerList[objectName] = (prH)
 
     def probCallback(self,data):
         probsString=data.data
 
+    #called by rossetup, to load locations list.
     def loadLocations(self):
         self.yDict = dict()
         with open(self.regions_file) as stream:
             try:
-                yDict=(yaml.load(stream))
+                self.yDict=(yaml.load(stream))
             except yaml.YAMLError as exc:
                 print(exc)
 
@@ -186,6 +230,7 @@ class rol_server():
             if region.has_key('subregions'):
                 for subR in region['subregions']:
                     self.sublocationsList.append(subR['name'])
+
 
     # Must have __init__(self) function for a class, similar to a C++ class constructor.
     def __init__(self):
@@ -197,14 +242,19 @@ class rol_server():
         self.locationsList=[]
         self.sublocationsList = []
 
-        # ros set-up: find out tracked objects, subscribe to their probs...
+	#sleep for 10 seconds to be sure tag nodes are running
+	rospy.sleep(10.)
+
+        # get parameters from ros: find out tracked objects, locations, subscribe to their probs trackers...
         self.rosSetup()
 
-        # get list of map locations and sublocations
-        self.loadLocations()
+        # create publisher for service requests
+        self.rol_pub = rospy.Publisher(self.rolTopic, String, queue_size=10)
 
 
+        # start service callback
         self.s=rospy.Service('rol_server', findObject, self.performLoc)
+
 
         rospy.loginfo("Ready...")
         rospy.spin()
@@ -213,7 +263,7 @@ class rol_server():
 # Main function.
 if __name__ == '__main__':
     # Initialize the node and name it.
-    rospy.init_node('rol_server')
+    rospy.init_node('rol_server', log_level=rospy.DEBUG)
 
     # Go to class functions that do all the heavy lifting. Do error checking.
     try:

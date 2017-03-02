@@ -188,6 +188,7 @@ class SpatioFreqModel(object):
 
 
     def probability(self,rssi_db, x, y, freq_khz):
+	#copmputes probability
         cx= self.metric2cell(x)
         cy = self.metric2cell(y)
         cf = self.freq2cell(freq_khz)
@@ -445,6 +446,7 @@ class PartFilter():
 # Main function.
 if __name__ == '__main__':
 
+    random.seed(time.time())
 
     rospy.init_node('particle_filter')
 

@@ -108,7 +108,7 @@ if __name__ == "__main__":
     rfid.init()
     reader = rfid.startReader(RFIDdeviceURI, rfidCallback)    
     rfid.setHopTime(reader, hopTime) 
-    rfid.setRegionEU(reader)
+    #rfid.setRegionEU(reader)
     rfid.setPower(reader, txpower)        
     rospy.loginfo('Tx Power is = %2.2f dBm', txpower/100)                
 
