@@ -17,9 +17,10 @@ if __name__ == "__main__":
 
 	rfid.init()
 	reader = rfid.startReader("tmr:///dev/ttyACM0", rfidCallback)
+	rfid.setPower(reader,3000)
 
 	rfid.setHopTime(reader, 40) 
-	rfid.setRegionEU(reader)
+	#rfid.setRegionEU(reader)
 
 	rospy.spin()
 

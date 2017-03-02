@@ -1,0 +1,22 @@
+<launch>
+  <!-- Launch the rfid grid map node -->
+  <node pkg="rfid_grid_map" type="rfid_grid_map_node" name="rfid_grid_map_node" output="screen">
+      <remap from="/rfid_grid_map/lastTag" to="/lastTag"/>	
+ </node>
+ 
+  <!-- Launch the grid map and visualization on grid.launch -->
+  <include file="$(find rfid_grid_map)/launch/grid.launch">
+    <!-- all vars that included.launch requires must be set -->
+    <arg name="tagID" value="300833B2DDD9014000000014" />
+    <arg name="object" value="Tag14" />
+  </include>
+  
+  
+  <!-- Launch the grid map visualizer -->
+  <node pkg="grid_map_visualization" type="grid_map_visualization" name="grid_map_visualization" output="screen">
+    <rosparam command="load" file="$(find rfid_grid_map)/config/visualization.yaml" />
+  </node>
+  
+  <!-- Launch RViz with the demo configuration -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find rfid_grid_map)/rviz/rfid_gridmap.rviz" />
+</launch>
